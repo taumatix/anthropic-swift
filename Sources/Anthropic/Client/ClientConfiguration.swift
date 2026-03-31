@@ -57,6 +57,6 @@ public struct ClientConfiguration: Sendable {
         self.maxRetries = maxRetries
         self.retryPolicy = retryPolicy
         self.additionalHeaders = additionalHeaders
-        self.httpClient = httpClient ?? URLSessionHTTPClient()
+        self.httpClient = httpClient ?? URLSessionHTTPClient(baseURL: baseURL)
     }
 }
