@@ -59,7 +59,7 @@ struct ToolUseExample {
                 .user("What's the weather like in San Francisco?"),
                 .assistant(initialResponse.content.map { block -> ContentBlockParam in
                     switch block {
-                    case .toolUse(let t): return .toolResult(toolUseId: t.id, content: nil, isError: nil)
+                    case .toolUse(let t): return .toolUse(id: t.id, name: t.name, input: t.input)
                     case .text(let t): return .text(t.text)
                     default: return .text("")
                     }
@@ -73,10 +73,9 @@ struct ToolUseExample {
             maxTokens: 1024,
             tools: [weatherTool]
         )
-        print(jsonStringify(followUpRequest))
 
-        // print("\nStep 2: Sending tool result...")
-        // let finalResponse = try await client.messages.create(followUpRequest)
-        // print("\nFinal response:", finalResponse.textContent)
+        print("\nStep 2: Sending tool result...")
+        let finalResponse = try await client.messages.create(followUpRequest)
+        print("\nFinal response:", finalResponse.textContent)
     }
 }

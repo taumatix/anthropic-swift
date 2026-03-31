@@ -133,11 +133,12 @@ public enum ContentBlock: Sendable, Codable, Equatable {
 public enum ContentBlockParam: Sendable, Codable, Equatable {
     case text(String)
     case image(ImageSource)
+    case toolUse(id: String, name: String, input: [String: AnyJSONValue])
     case toolResult(toolUseId: String, content: [ContentBlockParam]?, isError: Bool?)
     case document(DocumentSource)
 
     private enum CodingKeys: String, CodingKey {
-        case type, text, source, toolUseId, content, isError
+        case type, text, source, id, name, input, toolUseId, content, isError
     }
 
     public init(from decoder: Decoder) throws {
@@ -150,6 +151,11 @@ public enum ContentBlockParam: Sendable, Codable, Equatable {
         case "image":
             let source = try container.decode(ImageSource.self, forKey: .source)
             self = .image(source)
+        case "tool_use":
+            let id = try container.decode(String.self, forKey: .id)
+            let name = try container.decode(String.self, forKey: .name)
+            let input = try container.decode([String: AnyJSONValue].self, forKey: .input)
+            self = .toolUse(id: id, name: name, input: input)
         case "tool_result":
             let id = try container.decode(String.self, forKey: .toolUseId)
             let content = try container.decodeIfPresent([ContentBlockParam].self, forKey: .content)
@@ -172,6 +178,11 @@ public enum ContentBlockParam: Sendable, Codable, Equatable {
         case .image(let source):
             try container.encode("image", forKey: .type)
             try container.encode(source, forKey: .source)
+        case .toolUse(let id, let name, let input):
+            try container.encode("tool_use", forKey: .type)
+            try container.encode(id, forKey: .id)
+            try container.encode(name, forKey: .name)
+            try container.encode(input, forKey: .input)
         case .toolResult(let id, let content, let isError):
             try container.encode("tool_result", forKey: .type)
             try container.encode(id, forKey: .toolUseId)
