@@ -6,10 +6,9 @@ import Foundation
 /// 1. Injecting auth headers (`x-api-key`, `anthropic-version`)
 /// 2. Injecting `content-type` and `accept` headers
 /// 3. Merging client-level `additionalHeaders`
-/// 4. Building the full `URLRequest`
-/// 5. Executing the request through the `HTTPClient`
-/// 6. Applying retry logic for retryable status codes
-/// 7. Throwing `AnthropicError` for non-2xx responses
+/// 4. Executing the request through the `HTTPClient` protocol
+/// 5. Applying retry logic for retryable status codes
+/// 6. Throwing `AnthropicError` for non-2xx responses
 public final class RequestPipeline: Sendable {
     private let configuration: ClientConfiguration
 
@@ -34,13 +33,7 @@ public final class RequestPipeline: Sendable {
         var attempt = 0
         while true {
             let prepared = prepare(request, isAdmin: isAdminPath(request.path))
-            let urlRequest = try prepared.urlRequest(baseURL: configuration.baseURL)
-            let response: HTTPResponse
-            if let urlSessionClient = configuration.httpClient as? URLSessionHTTPClient {
-                response = try await urlSessionClient.send(urlRequest: urlRequest)
-            } else {
-                response = try await configuration.httpClient.send(prepared)
-            }
+            let response = try await configuration.httpClient.send(prepared)
 
             if response.isSuccess { return response }
 
@@ -62,16 +55,7 @@ public final class RequestPipeline: Sendable {
     /// Returns a stream of raw `Data` chunks for an SSE request.
     public func stream(_ request: HTTPRequest) -> AsyncThrowingStream<Data, Error> {
         let prepared = prepare(request, isAdmin: false)
-        if let urlSessionClient = configuration.httpClient as? URLSessionHTTPClient {
-            guard let urlRequest = try? prepared.urlRequest(baseURL: configuration.baseURL) else {
-                return AsyncThrowingStream { $0.finish(throwing: AnthropicError.encodingError(
-                    EncodingError.invalidValue(request.path, .init(codingPath: [], debugDescription: "Invalid URL"))
-                )) }
-            }
-            return urlSessionClient.stream(urlRequest: urlRequest)
-        } else {
-            return configuration.httpClient.stream(prepared)
-        }
+        return configuration.httpClient.stream(prepared)
     }
 
     // MARK: - Helpers

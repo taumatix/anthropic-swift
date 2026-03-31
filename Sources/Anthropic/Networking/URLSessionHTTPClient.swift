@@ -4,22 +4,23 @@ import Foundation
 ///
 /// Uses `URLSession.data(for:)` for non-streaming requests and
 /// `URLSession.bytes(for:)` for streaming (SSE) requests.
+///
+/// The `baseURL` is required so this client can properly implement the
+/// `HTTPClient` protocol by building `URLRequest` values itself, without
+/// needing an out-of-band call path from `RequestPipeline`.
 public final class URLSessionHTTPClient: HTTPClient, @unchecked Sendable {
     private let session: URLSession
+    let baseURL: URL
 
-    public init(session: URLSession = .shared) {
+    public init(session: URLSession = .shared, baseURL: URL = ClientConfiguration.defaultBaseURL) {
         self.session = session
+        self.baseURL = baseURL
     }
+
+    // MARK: - HTTPClient
 
     public func send(_ request: HTTPRequest) async throws -> HTTPResponse {
-        // Note: baseURL is set by RequestPipeline before calling this method.
-        // The request passed here already has the full URLRequest built.
-        // We accept pre-built URLRequest via a different path — see RequestPipeline.
-        fatalError("URLSessionHTTPClient.send(_:HTTPRequest) should not be called directly. Use RequestPipeline.")
-    }
-
-    /// Sends a pre-built `URLRequest` and returns the response.
-    func send(urlRequest: URLRequest) async throws -> HTTPResponse {
+        let urlRequest = try request.urlRequest(baseURL: baseURL)
         do {
             let (data, urlResponse) = try await session.data(for: urlRequest)
             return try makeResponse(data: data, urlResponse: urlResponse)
@@ -31,9 +32,18 @@ public final class URLSessionHTTPClient: HTTPClient, @unchecked Sendable {
         }
     }
 
-    /// Sends a pre-built `URLRequest` and returns a stream of raw data chunks.
-    func stream(urlRequest: URLRequest) -> AsyncThrowingStream<Data, Error> {
-        AsyncThrowingStream { continuation in
+    public func stream(_ request: HTTPRequest) -> AsyncThrowingStream<Data, Error> {
+        guard let urlRequest = try? request.urlRequest(baseURL: baseURL) else {
+            return AsyncThrowingStream { continuation in
+                continuation.finish(throwing: AnthropicError.encodingError(
+                    EncodingError.invalidValue(
+                        request.path,
+                        .init(codingPath: [], debugDescription: "Could not build URL from path: \(request.path)")
+                    )
+                ))
+            }
+        }
+        return AsyncThrowingStream { continuation in
             let task = Task {
                 do {
                     let (asyncBytes, urlResponse) = try await self.session.bytes(for: urlRequest)
@@ -78,9 +88,7 @@ public final class URLSessionHTTPClient: HTTPClient, @unchecked Sendable {
         }
     }
 
-    public func stream(_ request: HTTPRequest) -> AsyncThrowingStream<Data, Error> {
-        fatalError("URLSessionHTTPClient.stream(_:HTTPRequest) should not be called directly. Use RequestPipeline.")
-    }
+    // MARK: - Private
 
     private func makeResponse(data: Data, urlResponse: URLResponse) throws -> HTTPResponse {
         guard let httpResponse = urlResponse as? HTTPURLResponse else {
