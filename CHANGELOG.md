@@ -9,7 +9,14 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
-## [0.1.0] — 2025-01-01
+## [0.1.0] — 2026-09-06
+
+### Fixed
+
+- `RequestPipeline` no longer bypasses the injected `HTTPClient` for streaming requests,
+  so a custom or mock client is honoured on every code path (#1).
+- Decode `tool_use` blocks in assistant turns, which previously failed to parse when a
+  model replied with a tool call.
 
 ### Added
 
