@@ -39,7 +39,7 @@ let client = AnthropicClient(apiKey: "sk-ant-...")
 
 let response = try await client.messages.create(
     MessageRequest(
-        model: .claude4Sonnet,
+        model: .claudeSonnet5,
         messages: [.user("Hello, Claude!")],
         maxTokens: 1024
     )
@@ -140,14 +140,41 @@ print("Input tokens:", count.inputTokens)
 
 ### Models
 
+`Model` carries the wire ID as a plain string, so any model works — including ones released after
+this SDK version:
+
 ```swift
-// List all available models
+MessageRequest(model: .claudeOpus5, ...)                  // named constant
+MessageRequest(model: "claude-some-future-model", ...)    // string literal, no SDK release needed
+```
+
+| Constant | Wire ID |
+|---|---|
+| `.claudeFable5` | `claude-fable-5` |
+| `.claudeOpus5` | `claude-opus-5` |
+| `.claudeOpus48` / `.claudeOpus47` / `.claudeOpus46` / `.claudeOpus45` | `claude-opus-4-8` … `-4-5` |
+| `.claudeSonnet5` | `claude-sonnet-5` |
+| `.claudeSonnet46` / `.claudeSonnet45` | `claude-sonnet-4-6` / `-4-5` |
+| `.claudeHaiku45` | `claude-haiku-4-5` |
+
+`.claudeMythos5` is also defined, but only Project Glasswing participants can reach it.
+
+The Claude 3.x constants (`.claude35Sonnet`, `.claude3Opus`, …) are deprecated: those models are
+retired and the API returns 404 for them. They still compile so existing code isn't broken, but
+each one now warns with its replacement.
+
+`.claude4Opus`, `.claude4Sonnet`, and `.claude4Haiku` keep their original 4.5-generation values —
+repointing a name at a newer model would silently change which model your code runs against. Use
+the explicitly versioned constants above instead.
+
+```swift
+// List what the API currently serves — the authoritative answer
 for try await model in try await client.models.list() {
     print(model.id, model.displayName)
 }
 
 // Get a specific model
-let model = try await client.models.get(id: "claude-opus-4-6")
+let model = try await client.models.get(id: "claude-opus-5")
 print(model.displayName)
 ```
 

@@ -9,6 +9,25 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- `Model` constants for the current lineup: `.claudeFable5`, `.claudeMythos5`, `.claudeOpus5`,
+  `.claudeOpus48`, `.claudeOpus47`, `.claudeOpus46`, `.claudeOpus45`, `.claudeSonnet5`,
+  `.claudeSonnet46`, `.claudeSonnet45`, `.claudeHaiku45`. The newest model the catalogue previously
+  knew about was Opus 4.5.
+
+### Deprecated
+
+- Every Claude 3.x constant — `.claude37Sonnet`, `.claude35Sonnet`, `.claude35SonnetLatest`,
+  `.claude35Haiku`, `.claude35HaikuLatest`, `.claude3Opus`, `.claude3Sonnet`, `.claude3Haiku`.
+  Seven of those models are retired and the API returns 404 for them, so the constants were a
+  runtime failure with no compile-time signal. Each now carries its retirement date and the
+  constant to use instead. They still compile — nothing is removed.
+
+`.claude4Opus`, `.claude4Sonnet`, and `.claude4Haiku` keep their existing 4.5-generation values.
+Repointing a name at a newer model would silently change which model a caller runs against, so
+they are documented as pinned rather than updated.
+
 ## [0.1.0] — 2026-09-06
 
 ### Fixed
