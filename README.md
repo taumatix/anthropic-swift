@@ -17,7 +17,7 @@ Admin/Organization API (Workspaces, API Keys, Members, Invites).
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/taumatix/anthropic-swift", from: "0.1.0"),
+    .package(url: "https://github.com/taumatix/anthropic-swift", from: "0.2.0"),
 ],
 targets: [
     .target(name: "MyApp", dependencies: [
