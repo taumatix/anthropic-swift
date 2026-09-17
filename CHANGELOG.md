@@ -9,6 +9,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-09-17
+
 ### Added
 
 - `Model` constants for the current lineup: `.claudeFable5`, `.claudeMythos5`, `.claudeOpus5`,
@@ -110,5 +112,6 @@ they are documented as pinned rather than updated.
 - `README.md` — full feature documentation and usage examples
 - `Docs/ADR/` — eight Architectural Decision Records (0001–0008)
 
-[Unreleased]: https://github.com/taumatix/anthropic-swift/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/taumatix/anthropic-swift/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/taumatix/anthropic-swift/releases/tag/v0.2.0
 [0.1.0]: https://github.com/taumatix/anthropic-swift/releases/tag/v0.1.0
