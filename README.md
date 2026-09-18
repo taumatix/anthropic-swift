@@ -4,6 +4,11 @@ A production-quality Swift SDK for the [Anthropic](https://www.anthropic.com) Cl
 Supports all GA APIs (Messages, Batches, Models), beta APIs (Files, Skills), and the
 Admin/Organization API (Workspaces, API Keys, Members, Invites).
 
+> **Wire contracts:** API version `2023-06-01`; beta headers `files-api-2025-04-14` (Files) and
+> `skills-2025-10-02` (Skills), last checked 2026-09-19. Beta headers are dated and can be
+> retired by Anthropic, at which point those two services fail against the live API while every
+> test here still passes. See [UPSTREAM.md](UPSTREAM.md).
+
 ## Requirements
 
 - Swift 5.9+
