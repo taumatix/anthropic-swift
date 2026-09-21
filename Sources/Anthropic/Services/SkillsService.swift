@@ -1,11 +1,15 @@
 import Foundation
 
-/// Provides access to the Skills API (beta).
+/// Provides access to the Skills API.
 ///
 /// Access via `AnthropicClient.skills`.
 ///
-/// - Note: This API requires the `skills-2025-10-02` beta header, which is
-///   automatically injected by this service.
+/// - Warning: This service still sends `anthropic-beta: skills-2025-10-02`, and the Skills API has
+///   left beta — as of 2026-09-21 the documentation does not mention that header anywhere. Whether
+///   it is still accepted is unverified. The GA `/v1/skills` object carries `display_name`,
+///   `latest_version_id`, `updated_at` and a `source` object where `Skill` expects `name`, and GA
+///   paginates with `page`/`next_page` rather than `after_id`, so if the header stops being honoured
+///   decoding fails rather than degrading. Migration is tracked in `ROADMAP.md`.
 public final class SkillsService: Sendable {
     private let pipeline: RequestPipeline
     private let betaHeader = "skills-2025-10-02"

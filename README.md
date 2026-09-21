@@ -1,13 +1,23 @@
 # Anthropic Swift SDK
 
 A production-quality Swift SDK for the [Anthropic](https://www.anthropic.com) Claude API.
-Supports all GA APIs (Messages, Batches, Models), beta APIs (Files, Skills), and the
-Admin/Organization API (Workspaces, API Keys, Members, Invites).
+Supports the Messages, Batches, Models, Files and Skills APIs, and the Admin/Organization API
+(Workspaces, API Keys, Members, Invites).
 
-> **Wire contracts:** API version `2023-06-01`; beta headers `files-api-2025-04-14` (Files) and
-> `skills-2025-10-02` (Skills), last checked 2026-09-19. Beta headers are dated and can be
-> retired by Anthropic, at which point those two services fail against the live API while every
-> test here still passes. See [UPSTREAM.md](UPSTREAM.md).
+> **Wire contracts, checked 2026-09-21:** API version `2023-06-01` — current. But `FilesService`
+> and `SkillsService` still send the beta headers `files-api-2025-04-14` and `skills-2025-10-02`,
+> and **both APIs have since left beta.**
+>
+> - **Files still works.** The header is optional now and sending it keeps the old response shapes,
+>   so the cost is missing surface: no `expires_at` on a file, no `expires_in_seconds` at upload,
+>   and the superseded `before_id`/`after_id` cursor instead of `page`/`next_page`.
+> - **Skills is unverified.** The docs no longer mention `skills-2025-10-02` anywhere. If the header
+>   has stopped being honoured, `Skill` decoding fails rather than degrading, because the GA object
+>   has no `name` field. Confirming it needs a live API key; this has not been tested against one.
+>
+> Migrating either is roadmap work, not a patch — the list cursor and the `Skill` fields are public
+> API and have to grow additively. See [UPSTREAM.md](UPSTREAM.md) for the shape-by-shape diff and
+> [ROADMAP.md](ROADMAP.md) for the order.
 
 ## Requirements
 
