@@ -1,11 +1,14 @@
 import Foundation
 
-/// Provides access to the Files API (beta).
+/// Provides access to the Files API.
 ///
 /// Access via `AnthropicClient.files`.
 ///
-/// - Note: This API requires the `files-api-2025-04-14` beta header, which is
-///   automatically injected by this service.
+/// - Note: This service sends `anthropic-beta: files-api-2025-04-14`, which the Files API no longer
+///   requires — it left beta, and as of 2026-09-21 the header is optional. Sending it still works
+///   and keeps the beta response shapes, so the cost is missing surface: no `expires_at` on a file,
+///   no `expires_in_seconds` at upload, and the superseded `before_id`/`after_id` cursor instead of
+///   `page`/`next_page`. Migration is tracked in `ROADMAP.md`.
 public final class FilesService: Sendable {
     private let pipeline: RequestPipeline
     private let betaHeader = "files-api-2025-04-14"
