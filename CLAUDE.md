@@ -36,10 +36,15 @@ Never instantiate a standalone `JSONEncoder` or `JSONDecoder`. The shared single
 in `Sources/Anthropic/Internal/JSONCoding.swift` provide consistent snake_case key
 conversion across the entire SDK.
 
-### Beta endpoints hardcode their `anthropic-beta` version string
-Each beta service (Files, Skills) declares `private let betaHeader: String = "..."` as
-a module-level or type-level constant. This makes the pinned version explicit and
-easy to update in one place per service.
+### A service that sends `anthropic-beta` hardcodes the version string
+`FilesService` and `SkillsService` each declare `private let betaHeader: String = "..."` as a
+type-level constant, so the pinned version is explicit and changes in one place.
+
+**Both of those APIs have since left beta** (checked 2026-09-21; see `UPSTREAM.md`). The headers are
+still sent, which keeps Files on the beta response shapes and leaves Skills on a header the docs no
+longer mention at all. Do not treat either service as beta when reasoning about its surface, and do
+not copy this pattern for a new service without checking whether the endpoint is GA. Migrating both
+is tracked in `ROADMAP.md`.
 
 ---
 
@@ -72,8 +77,8 @@ AnthropicClient
   ├── messages: MessagesService
   ├── batches:  BatchesService
   ├── models:   ModelsService
-  ├── files:    FilesService       (beta)
-  ├── skills:   SkillsService      (beta)
+  ├── files:    FilesService       (GA; still sends the beta header — see UPSTREAM.md)
+  ├── skills:   SkillsService      (GA; still sends the beta header — see UPSTREAM.md)
   └── admin:    AdminServices
         ├── workspaces: WorkspacesService
         ├── apiKeys:    APIKeysService
