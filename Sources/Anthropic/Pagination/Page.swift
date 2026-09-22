@@ -18,6 +18,12 @@ public struct Page<T: Sendable & Decodable>: Sendable {
     public let firstId: String?
     /// The ID of the last item on this page.
     public let lastId: String?
+    /// The opaque token for fetching the page after this one, or `nil` if this is the last page.
+    ///
+    /// Endpoints that paginate by token — the Skills API — return this as `next_page` and expect it
+    /// back as the `page` query parameter. Endpoints that paginate by id return `nil` here and
+    /// populate ``lastId`` instead.
+    public let nextPage: String?
 
     /// Fetches the next page given the ID of the last item on the current page.
     /// `nil` if there are no more pages.
@@ -28,19 +34,26 @@ public struct Page<T: Sendable & Decodable>: Sendable {
         hasMore: Bool,
         firstId: String?,
         lastId: String?,
+        nextPage: String? = nil,
         nextPageFetcher: (@Sendable (String) async throws -> Page<T>)? = nil
     ) {
         self.data = data
         self.hasMore = hasMore
         self.firstId = firstId
         self.lastId = lastId
+        self.nextPage = nextPage
         self.nextPageFetcher = nextPageFetcher
     }
 
     /// Fetches the next page, or `nil` if there are no more pages.
+    ///
+    /// The cursor handed to the fetcher is ``nextPage`` for token-paginated endpoints and
+    /// ``lastId`` for id-paginated ones. The service that built the page supplies a fetcher that
+    /// knows which of the two it asked for.
     func fetchNextPage() async throws -> Page<T>? {
-        guard hasMore, let lastId = lastId, let fetcher = nextPageFetcher else { return nil }
-        return try await fetcher(lastId)
+        guard hasMore, let fetcher = nextPageFetcher else { return nil }
+        guard let cursor = nextPage ?? lastId else { return nil }
+        return try await fetcher(cursor)
     }
 }
 
@@ -87,15 +100,22 @@ extension Page: AsyncSequence {
 
 extension Page: Decodable where T: Decodable {
     private enum CodingKeys: String, CodingKey {
-        case data, hasMore, firstId, lastId
+        case data, hasMore, firstId, lastId, nextPage
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.data = try container.decode([T].self, forKey: .data)
-        self.hasMore = try container.decode(Bool.self, forKey: .hasMore)
         self.firstId = try container.decodeIfPresent(String.self, forKey: .firstId)
         self.lastId = try container.decodeIfPresent(String.self, forKey: .lastId)
+        self.nextPage = try container.decodeIfPresent(String.self, forKey: .nextPage)
+        // Token-paginated envelopes carry no `has_more`: a non-null `next_page` is what says there
+        // is another page. Id-paginated envelopes carry `has_more` and no `next_page`.
+        if let hasMore = try container.decodeIfPresent(Bool.self, forKey: .hasMore) {
+            self.hasMore = hasMore
+        } else {
+            self.hasMore = self.nextPage != nil
+        }
         self.nextPageFetcher = nil
     }
 }
