@@ -3,7 +3,13 @@ import Anthropic
 
 /// Canned JSON response bodies for use in unit tests.
 ///
-/// All fixtures match the actual Anthropic API response shapes.
+/// - Important: A fixture is only as good as where it came from. The `skill*` bodies below are
+///   copied verbatim from Anthropic's published `Response (200)` examples, with the page and the
+///   date they were read. The older fixtures were hand-written from the API's shape as understood
+///   at the time, and at least one type was wrong that way for six months with a green suite —
+///   `Skill` decoded a `name` key the API has never returned. Treat an uncited fixture as a
+///   statement about this SDK, not about the API, and re-derive it from the docs before trusting
+///   it to prove a contract.
 public enum MockResponses {
     // MARK: - Messages
 
@@ -339,6 +345,54 @@ public enum MockResponses {
         "type": "rate_limit_error",
         "message": "Number of request tokens has exceeded your per-minute rate limit."
       }
+    }
+    """.utf8)
+
+    // MARK: - Skills
+    //
+    // Copied verbatim from the `Response (200)` examples, retrieved 2026-09-22. The beta
+    // (`skills-2025-10-02`) and GA documents describe the same object and the same envelope.
+
+    /// <https://platform.claude.com/docs/en/api/skills/retrieve>
+    public static let skillObject = Data("""
+    {
+      "id": "skill_01JAbcdefghijklmnopqrstuvw",
+      "created_at": "2024-10-30T23:58:27.427722Z",
+      "display_name": "display_name",
+      "latest_version_id": "latest_version_id",
+      "source": {
+        "type": "custom"
+      },
+      "type": "skill",
+      "updated_at": "2024-10-30T23:58:27.427722Z"
+    }
+    """.utf8)
+
+    /// <https://platform.claude.com/docs/en/api/skills/list>
+    public static let skillList = Data("""
+    {
+      "data": [
+        {
+          "id": "skill_01JAbcdefghijklmnopqrstuvw",
+          "created_at": "2024-10-30T23:58:27.427722Z",
+          "display_name": "display_name",
+          "latest_version_id": "latest_version_id",
+          "source": {
+            "type": "custom"
+          },
+          "type": "skill",
+          "updated_at": "2024-10-30T23:58:27.427722Z"
+        }
+      ],
+      "next_page": "next_page"
+    }
+    """.utf8)
+
+    /// <https://platform.claude.com/docs/en/api/skills/delete>
+    public static let skillDeleted = Data("""
+    {
+      "id": "skill_01JAbcdefghijklmnopqrstuvw",
+      "type": "skill_deleted"
     }
     """.utf8)
 }

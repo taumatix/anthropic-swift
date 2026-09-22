@@ -31,9 +31,9 @@ struct MultipartFormData: Sendable {
         for part in parts {
             body.append("--\(boundary)\(crlf)")
 
-            var disposition = "Content-Disposition: form-data; name=\"\(part.name)\""
+            var disposition = "Content-Disposition: form-data; name=\"\(Self.escapeHeaderValue(part.name))\""
             if let filename = part.filename {
-                disposition += "; filename=\"\(filename)\""
+                disposition += "; filename=\"\(Self.escapeHeaderValue(filename))\""
             }
             body.append("\(disposition)\(crlf)")
             body.append("Content-Type: \(part.contentType)\(crlf)")
@@ -49,6 +49,31 @@ struct MultipartFormData: Sendable {
     /// The value for the `Content-Type` header, including the boundary.
     var contentTypeHeader: String {
         "multipart/form-data; boundary=\(boundary)"
+    }
+
+    /// Makes a string safe to sit inside a quoted `Content-Disposition` parameter.
+    ///
+    /// A part name or filename can come from the caller — `SkillFile.path` does — and an
+    /// unescaped `"` or CRLF there lets that value close the quoted string and forge further part
+    /// headers or a whole extra part. Per RFC 7578 §5.1 and RFC 6266, backslash-escape the quoting
+    /// characters and drop the line breaks that would end the header.
+    /// Iterates unicode scalars, not `Character`s: CRLF is a *single* grapheme cluster in Swift, so
+    /// a `Character` comparison against "\r" and "\n" matches neither and lets the pair through.
+    static func escapeHeaderValue(_ value: String) -> String {
+        var escaped = String.UnicodeScalarView()
+        escaped.reserveCapacity(value.unicodeScalars.count)
+        for scalar in value.unicodeScalars {
+            switch scalar {
+            case "\r", "\n":
+                continue
+            case "\"", "\\":
+                escaped.append("\\")
+                escaped.append(scalar)
+            default:
+                escaped.append(scalar)
+            }
+        }
+        return String(escaped)
     }
 }
 

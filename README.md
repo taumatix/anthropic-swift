@@ -4,19 +4,18 @@ A production-quality Swift SDK for the [Anthropic](https://www.anthropic.com) Cl
 Supports the Messages, Batches, Models, Files and Skills APIs, and the Admin/Organization API
 (Workspaces, API Keys, Members, Invites).
 
-> **Wire contracts, checked 2026-09-21:** API version `2023-06-01` — current. But `FilesService`
-> and `SkillsService` still send the beta headers `files-api-2025-04-14` and `skills-2025-10-02`,
-> and **both APIs have since left beta.**
+> **Wire contracts:** API version `2023-06-01` — current, checked 2026-09-21.
 >
-> - **Files still works.** The header is optional now and sending it keeps the old response shapes,
->   so the cost is missing surface: no `expires_at` on a file, no `expires_in_seconds` at upload,
->   and the superseded `before_id`/`after_id` cursor instead of `page`/`next_page`.
-> - **Skills is unverified.** The docs no longer mention `skills-2025-10-02` anywhere. If the header
->   has stopped being honoured, `Skill` decoding fails rather than degrading, because the GA object
->   has no `name` field. Confirming it needs a live API key; this has not been tested against one.
+> - **Skills is on GA as of 2026-09-22** and sends no beta header. It previously decoded a `name`
+>   field the API has never returned, so every `client.skills` call failed; if you are on `0.2.0`
+>   or earlier, Skills does not work at all. `Skill.name` still compiles, deprecated, and now
+>   returns `displayName`.
+> - **Files still sends `files-api-2025-04-14`**, checked 2026-09-21. The header is optional now and
+>   sending it keeps the old response shapes, so the cost is missing surface: no `expires_at` on a
+>   file, no `expires_in_seconds` at upload, and the superseded `before_id`/`after_id` cursor
+>   instead of `page`/`next_page`. Migrating it is the next roadmap entry of its kind.
 >
-> Migrating either is roadmap work, not a patch — the list cursor and the `Skill` fields are public
-> API and have to grow additively. See [UPSTREAM.md](UPSTREAM.md) for the shape-by-shape diff and
+> See [UPSTREAM.md](UPSTREAM.md) for the shape-by-shape diff and what was verified when, and
 > [ROADMAP.md](ROADMAP.md) for the order.
 
 ## Requirements
@@ -247,6 +246,56 @@ let response = try await client.messages.create(
 try await client.files.delete(id: file.id)
 ```
 
+### Skills
+
+A skill is created from a file set, which must contain a `SKILL.md` at the root of one shared
+top-level directory. `displayName` is optional — the API derives it from the `SKILL.md` frontmatter.
+
+```swift
+let manifest = """
+---
+name: invoice-parser
+description: Extracts line items from supplier invoices.
+---
+
+Read the invoice and return each line item as JSON.
+"""
+
+let skill = try await client.skills.create(
+    files: [
+        SkillFile(path: "invoice-parser/SKILL.md",
+                  content: Data(manifest.utf8),
+                  mimeType: "text/markdown")
+    ],
+    displayName: "Invoice parser"
+)
+print(skill.id, skill.displayName, skill.latestVersionId ?? "-")
+```
+
+Listing paginates by token. `Page` is an `AsyncSequence`, so iterating follows `next_page` for you
+and keeps the `source` filter across the boundary:
+
+```swift
+for try await skill in try await client.skills.list(source: .custom) {
+    print(skill.displayName, skill.source?.rawType ?? "unknown")
+}
+
+// Or a single page, when you want to hold the cursor yourself.
+let page = try await client.skills.list(limit: 100)
+let next = page.nextPageToken
+
+try await client.skills.delete(id: skill.id)
+```
+
+`SkillSource.Kind` is `RawRepresentable` with an `unknown(String)` case that carries the value the
+API sent, so a source Anthropic adds later decodes instead of failing the response — and can be
+handed straight back as a filter:
+
+```swift
+let seen = try await client.skills.list(limit: 1).data.first?.source?.type
+let more = try await client.skills.list(source: seen)   // works even for a source this SDK predates
+```
+
 ### Admin API
 
 The Admin API requires a separate admin API key:
@@ -311,12 +360,19 @@ Or using the fluent builder:
 ```swift
 let client = AnthropicClient(
     apiKey: "sk-ant-...",
-    options: ClientOptions()
-        .timeout(120)
+    options: ClientOptions(apiKey: "sk-ant-...")
         .maxRetries(3)
-        .additionalHeader("x-request-id", "my-id")
+        .additionalHeaders(["x-request-id": "my-id"])
 )
 ```
+
+`baseURL` retargets the SDK's HTTP client, so pointing it at a gateway or a proxy works through
+either form. A client you supply yourself keeps its own routing and is never replaced.
+
+> **`timeout` is currently ignored.** It is stored on the configuration but never reaches the
+> `URLSession`, which uses its own 60-second default. Setting it has no effect today; a long
+> streaming turn can still fail at 60s as `AnthropicError.timeout`. Tracked at the top of
+> [ROADMAP.md](ROADMAP.md).
 
 ## Testing
 

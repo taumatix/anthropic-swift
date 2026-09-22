@@ -9,6 +9,88 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Fixed
+
+- **`SkillsService` never worked.** `Skill` required a `name` key and `Page` required `has_more`;
+  the Skills API returns neither, under the GA path or under `anthropic-beta: skills-2025-10-02`.
+  Every `client.skills` call threw `AnthropicError.decodingError` from the first release. The
+  service now targets the GA endpoints and decodes the documented object.
+- **`baseURL` was ignored.** `ClientConfiguration.init` built `URLSessionHTTPClient` eagerly, so
+  setting `baseURL` afterwards — all that `ClientOptions.baseURL(_:)` does — left the client
+  pointed at `https://api.anthropic.com`. Anyone routing through a gateway, proxy, regional
+  endpoint or local test server sent their traffic and their API key to the public API instead.
+  Assigning `baseURL` now retargets any `URLSessionHTTPClient`, preserving its `URLSession` —
+  injecting a client is the only way to supply a pinned or proxied session, so doing that must not
+  cost you `baseURL`. A client of another type routes itself and is left alone.
+- Iterating a `Page` stopped at the first page with an empty `data` array even when a cursor said
+  more pages followed, silently dropping the rest. Plausible with a token cursor in a way it was
+  not with an id cursor.
+- CI's integration job matched no test case (`swift test --filter "Integration"` — the filter
+  takes a test-case name, and `Integration` is only a directory), so it reported green while
+  running zero tests for as long as it existed. It now filters on `Live` and fails when no key is
+  present rather than passing vacuously.
+- The fluent-builder example in the README did not compile: `ClientOptions()` requires an
+  `apiKey`, and `additionalHeader(_:_:)` does not exist.
+
+### Added
+
+- `Skill.displayName`, `.latestVersionId`, `.source` and `.updatedAt`, matching the documented
+  object. `SkillSource.Kind` is `RawRepresentable` with an `unknown(String)` case carrying the
+  value the API sent, so a source added later decodes rather than failing the response, and can be
+  passed straight back as a `source:` filter.
+- `SkillsService.create(files:displayName:)` — `POST /v1/skills` is `multipart/form-data` with a
+  `files[]` part per file, which is what it has always taken. Rejects a file set with no `SKILL.md`
+  before sending anything.
+- `SkillsService.list(limit:pageToken:source:)` using the `page`/`next_page` token cursor.
+  Iterating the returned `Page` follows the token and keeps `limit` and `source` across every page
+  boundary.
+- `Page.nextPageToken`, alongside the existing id cursor. `hasMore` is derived from `next_page`
+  when `has_more` is absent, so both envelope shapes decode.
+- `SkillDeleteResponse`, returned by `delete(id:)`, and `SkillFile`.
+- `AnthropicError` conforms to `LocalizedError`, so `error.localizedDescription` reports the
+  reason instead of "The operation couldn't be completed. (… error 3.)". Applies to every case.
+- `SkillsEndToEndTests` drives the real client over a real socket against a loopback server
+  replaying Anthropic's published response bodies. `LiveSkillsTests` drives `api.anthropic.com`
+  and is skipped without `ANTHROPIC_API_KEY`.
+
+### Changed
+
+- `SkillsService` no longer sends `anthropic-beta: skills-2025-10-02`. It is still a live beta
+  value, but the beta endpoint returns the same object and envelope as GA, so it changed nothing.
+  Restore it with `ClientOptions.additionalHeaders(["anthropic-beta": "skills-2025-10-02"])`.
+- Multipart part names and filenames are escaped per RFC 7578 §5.1. `SkillFile.path` is
+  caller-supplied and went into `Content-Disposition` verbatim, so a `"` or CRLF in a path could
+  forge part headers or an extra form field. Also affects `FilesService` uploads.
+
+### Changed — source-breaking
+
+Two shapes that compiled against `0.2.0` no longer do. Both are narrow, and neither can affect
+working code that called `list`, `get` or `create`, because those always threw.
+
+- `delete(id:)` returns `SkillDeleteResponse` instead of `Void`. It is `@discardableResult`, so
+  `try await client.skills.delete(id: x)` as a statement still compiles. What breaks is binding it
+  as a `Void` function — `let f: (String) async throws -> Void = client.skills.delete` — and
+  `return try await client.skills.delete(id: x)` inside a `Void` function. Deleting was the one
+  Skills call that worked before this release, so this is the only change here with a real
+  incumbent; it is made because every other delete in this SDK (`FileDeleteResponse`,
+  `BatchDeleteResponse`, `InviteDeleteResponse`) returns its response, and a caller cannot
+  otherwise confirm *what* was deleted.
+- `list(limit:afterId:)` no longer defaults `afterId`. It must be written out, which is what keeps
+  a bare `list()` unambiguous against the new overload.
+
+### Deprecated
+
+- `Skill.name` — renamed to `displayName`. Still compiles and now returns the label the API sends.
+- `SkillsService.list(limit:afterId:)` — the Skills API paginates by token, and `after_id` is
+  ignored by the server. Use `list(limit:pageToken:source:)`. Its result no longer carries a page
+  fetcher: iterating it would have re-requested the first page forever under a cursor the API does
+  not implement, so it now yields one page and stops.
+- `SkillsService.create(_:)` and `CreateSkillRequest` — the API creates skills from an uploaded
+  file set, not a JSON body. Use `create(files:displayName:)`.
+
+Nothing was removed or renamed. `Skill.description` is `nil` against the current API and is kept in
+case a deployment returns one.
+
 ## [0.2.0] — 2026-09-17
 
 ### Added

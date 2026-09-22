@@ -16,8 +16,11 @@ jobs:
       - name: Build
         run: swift build
 
-      - name: Test (unit + service, no network)
-        run: swift test --filter "AnthropicTests" --skip "Integration"
+      # `--skip "Live"` matches the Live*Tests classes. The previous spelling, "Integration",
+      # matched nothing: swift test filters on TestCase/testMethod, and `Integration` is only a
+      # directory name. The live tests skip themselves without a key, so this is belt and braces.
+      - name: Test (unit, service and loopback end-to-end; no outbound network)
+        run: swift test --filter "AnthropicTests" --skip "Live"
 
   integration:
     name: Integration Tests
@@ -27,7 +30,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # `--filter "Integration"` matched no test case, so this job reported green while executing
+      # zero tests (`warning: No matching test cases were run`, exit 0) for as long as it existed.
+      # The classes are Live*Tests; filter on that.
+      #
+      # ANTHROPIC_SKILLS_WRITE_TESTS is deliberately not set: that round trip creates and deletes
+      # a real skill in the workspace behind the key, which is not something to do unattended on
+      # every merge. Run it by hand when the Skills surface changes.
       - name: Integration Tests
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: swift test --filter "Integration"
+        run: swift test --filter "Live"
+
+      # A filter typo made this job vacuous once; fail loudly rather than pass silently if the
+      # key is absent and every live test skips itself.
+      - name: Fail if no live test actually ran
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "ANTHROPIC_API_KEY is not set: every live test skipped, so this job proved nothing."
+            exit 1
+          fi

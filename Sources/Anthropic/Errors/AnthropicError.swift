@@ -68,6 +68,15 @@ public enum AnthropicError: Error, Sendable, CustomStringConvertible {
     }
 }
 
+// MARK: - LocalizedError
+
+/// Without this, `error.localizedDescription` — a Swift developer's reflex — renders a bare
+/// `Error` enum as "The operation couldn't be completed. (Anthropic.AnthropicError error 3.)" and
+/// throws away the reason. `description` already says something useful; make both paths agree.
+extension AnthropicError: LocalizedError {
+    public var errorDescription: String? { description }
+}
+
 // MARK: - HTTP Status Mapping
 
 extension AnthropicError {
