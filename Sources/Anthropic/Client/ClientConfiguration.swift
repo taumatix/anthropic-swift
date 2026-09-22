@@ -13,7 +13,16 @@ public struct ClientConfiguration: Sendable {
     public var adminAPIKey: String?
 
     /// The base URL for all API requests. Default: `https://api.anthropic.com`.
-    public var baseURL: URL
+    ///
+    /// Changing this retargets the SDK's own HTTP client. A client supplied by the caller — through
+    /// `init(httpClient:)` or by assigning ``httpClient`` — owns its own routing and is left alone.
+    public var baseURL: URL {
+        didSet {
+            if ownsHTTPClient {
+                storedHTTPClient = URLSessionHTTPClient(baseURL: baseURL)
+            }
+        }
+    }
 
     /// The Anthropic API version header value. Default: `"2023-06-01"`.
     public var anthropicVersion: String
@@ -31,7 +40,20 @@ public struct ClientConfiguration: Sendable {
     public var additionalHeaders: [String: String]
 
     /// The HTTP client used for networking. Override in tests with `MockHTTPClient`.
-    public var httpClient: any HTTPClient
+    ///
+    /// Assigning one hands routing to it: later changes to ``baseURL`` will not replace it.
+    public var httpClient: any HTTPClient {
+        get { storedHTTPClient }
+        set {
+            storedHTTPClient = newValue
+            ownsHTTPClient = false
+        }
+    }
+
+    private var storedHTTPClient: any HTTPClient
+    /// Whether ``storedHTTPClient`` is the one this type created, and so may be rebuilt when
+    /// ``baseURL`` changes.
+    private var ownsHTTPClient: Bool
 
     // MARK: - Default Configuration
 
@@ -57,6 +79,7 @@ public struct ClientConfiguration: Sendable {
         self.maxRetries = maxRetries
         self.retryPolicy = retryPolicy
         self.additionalHeaders = additionalHeaders
-        self.httpClient = httpClient ?? URLSessionHTTPClient(baseURL: baseURL)
+        self.storedHTTPClient = httpClient ?? URLSessionHTTPClient(baseURL: baseURL)
+        self.ownsHTTPClient = (httpClient == nil)
     }
 }
