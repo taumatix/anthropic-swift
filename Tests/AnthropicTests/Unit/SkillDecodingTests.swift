@@ -97,6 +97,7 @@ final class SkillDecodingTests: XCTestCase {
     }
 
     /// `name` predates the GA object and is kept as an alias so existing call sites compile.
+    @available(*, deprecated, message: "exercises deprecated API on purpose")
     func testNameAliasesDisplayName() throws {
         let skill = try JSONCoding.decoder.decode(Skill.self, from: Self.skillObjectJSON)
         XCTAssertEqual(skill.name, skill.displayName)
