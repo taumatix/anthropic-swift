@@ -29,13 +29,13 @@ API you are calling.
 - name: skills-api-beta
   kind: literal
   value: "skills-2025-10-02"
-  checked: 2026-09-21
-  note: >-
-    anthropic-beta header sent by SkillsService. STALE and the riskier of the two:
-    the docs no longer mention this header anywhere, and GA /v1/skills returns
-    {data, next_page} with display_name, latest_version_id and a source object.
-    Whether the header is still accepted is UNVERIFIED — checking needs an API key
-    this host does not have. ROADMAP entry.
+  checked: 2026-09-22
+  hold: >-
+    RETIRED FROM USE, not stale. SkillsService no longer sends this header — it is
+    still a live beta value, but the beta endpoint returns the same object and the
+    same {data, next_page} envelope as GA, so it changed nothing. Kept pinned so the
+    next pass rechecks that claim; restore it with
+    ClientOptions.additionalHeaders if it ever diverges again.
 
 - name: anthropic-sdk-python
   kind: github-release
@@ -71,17 +71,31 @@ GA shape added. `FilesService` therefore:
 So a caller of this SDK cannot read a file's expiry or use the GA cursor, and `expires_in_seconds`
 at upload is unreachable. Nothing fails; the surface is just a year behind.
 
-*Skills* — the riskier one. The docs no longer mention `skills-2025-10-02` **anywhere**, and GA
-`/v1/skills` returns `{data, next_page}` with `display_name`, `latest_version_id`, `updated_at` and
-a `source` object (`custom` / `anthropic` / `anthropic_example` / `plugin`). This SDK's `Skill`
-requires `name` and `created_at`, and `name` is not in the documented GA object at all — so if the
-header stops being honoured, decoding fails outright rather than degrading. **Whether the header is
-still accepted is unverified**: confirming it needs a live API key, which this host does not have,
-and the integration tests skip themselves without one. `latest_version_id` also points at a Skill
-*versions* sub-resource this SDK does not model.
+*Skills* — **migrated on 2026-09-22, and the framing above it was wrong.**
 
-Both migrations are `ROADMAP.md` entries, Skills first. Neither is a small change: the list cursor
-type and the `Skill` fields are public API, so they have to grow additively rather than be swapped.
+The 2026-09-21 note said the header was the thing protecting `Skill` from a decoding failure, and
+that the docs no longer mentioned `skills-2025-10-02` anywhere. Re-read on 2026-09-22 against
+<https://platform.claude.com/docs/en/api/beta/skills/list>, the header **is** still a live beta
+value — it appears in that page's `anthropic-beta` enum with 46 others. But the beta page and the
+GA page describe **the same object and the same envelope**: `display_name`, `latest_version_id`,
+`source`, `updated_at`, `{data, next_page}`. Neither returns `name`. Neither returns `has_more`.
+
+So the header was never load-bearing, and there was no future failure to wait for. `Skill` required
+`name` and `Page` required `has_more`, so **every `client.skills` call threw `decodingError` from
+the day it shipped**, under either header. The suite stayed green because its fixtures asserted the
+shape this SDK had invented.
+
+`SkillsService` now targets GA and sends no `anthropic-beta` header. `Skill` carries the documented
+fields, `name` survives as a deprecated alias for `displayName`, and `Page` reads the `next_page`
+token alongside the id cursor the other services still use. `SkillDecodingTests` and
+`SkillsEndToEndTests` assert Anthropic's literal published response bodies and cite the page each
+came from.
+
+Still open: skill **versions**. `latest_version_id` points at a sub-resource this SDK does not
+model, so a version id cannot be resolved. That is a `ROADMAP.md` entry.
+
+The *Files* migration remains a `ROADMAP.md` entry. It is the benign one, and the cursor work
+landed here is most of what it needs.
 
 **The documentation moved hosts.** `docs.anthropic.com/en/...` now 301s to
 `platform.claude.com/docs/en/...`. Links here and in the README use the new host; an old link still
@@ -116,3 +130,16 @@ Pages read on 2026-09-21, for whoever checks next:
 - <https://platform.claude.com/docs/en/build-with-claude/files> — including its
   "Migrate from `files-api-2025-04-14`" section
 - <https://platform.claude.com/docs/en/api/skills/list> — the GA Skill object and cursor
+
+Pages read on 2026-09-22, when Skills was migrated:
+
+- <https://platform.claude.com/docs/en/api/skills/list> — GA list, `page`/`next_page`, `source`
+- <https://platform.claude.com/docs/en/api/skills/retrieve> — the GA `Skill` object
+- <https://platform.claude.com/docs/en/api/skills/create> — `multipart/form-data`, `files[]`
+- <https://platform.claude.com/docs/en/api/skills/delete> — the `skill_deleted` object
+- <https://platform.claude.com/docs/en/api/beta/skills/list> — the `skills-2025-10-02` shape,
+  identical to GA, and the live `anthropic-beta` enum that still contains it
+
+`anthropic-api-version` and `files-api-beta` keep their 2026-09-21 date on purpose: this pass was a
+roadmap pass on Skills and did not re-read the versioning or Files pages. A `checked` date moves
+only as far as a run actually verified.

@@ -14,12 +14,14 @@ public struct ClientConfiguration: Sendable {
 
     /// The base URL for all API requests. Default: `https://api.anthropic.com`.
     ///
-    /// Changing this retargets the SDK's own HTTP client. A client supplied by the caller — through
-    /// `init(httpClient:)` or by assigning ``httpClient`` — owns its own routing and is left alone.
+    /// Changing this retargets any `URLSessionHTTPClient`, including one the caller supplied —
+    /// injecting a client is the only way to provide a custom `URLSession`, so a pinned or
+    /// proxied session must not cost you the ability to set `baseURL`. The retarget preserves that
+    /// session. A client of some other type does its own routing and is left alone.
     public var baseURL: URL {
         didSet {
-            if ownsHTTPClient {
-                storedHTTPClient = URLSessionHTTPClient(baseURL: baseURL)
+            if let retargetable = storedHTTPClient as? URLSessionHTTPClient {
+                storedHTTPClient = retargetable.retargeted(to: baseURL)
             }
         }
     }
@@ -41,19 +43,14 @@ public struct ClientConfiguration: Sendable {
 
     /// The HTTP client used for networking. Override in tests with `MockHTTPClient`.
     ///
-    /// Assigning one hands routing to it: later changes to ``baseURL`` will not replace it.
+    /// A `URLSessionHTTPClient` assigned here is still retargeted by a later ``baseURL`` change,
+    /// with its `URLSession` preserved. Any other client keeps its own routing.
     public var httpClient: any HTTPClient {
         get { storedHTTPClient }
-        set {
-            storedHTTPClient = newValue
-            ownsHTTPClient = false
-        }
+        set { storedHTTPClient = newValue }
     }
 
     private var storedHTTPClient: any HTTPClient
-    /// Whether ``storedHTTPClient`` is the one this type created, and so may be rebuilt when
-    /// ``baseURL`` changes.
-    private var ownsHTTPClient: Bool
 
     // MARK: - Default Configuration
 
@@ -79,7 +76,12 @@ public struct ClientConfiguration: Sendable {
         self.maxRetries = maxRetries
         self.retryPolicy = retryPolicy
         self.additionalHeaders = additionalHeaders
-        self.storedHTTPClient = httpClient ?? URLSessionHTTPClient(baseURL: baseURL)
-        self.ownsHTTPClient = (httpClient == nil)
+        // An injected URLSessionHTTPClient is retargeted to `baseURL` here too, so
+        // `init(baseURL:httpClient:)` cannot produce a client pointed somewhere else.
+        if let injected = httpClient as? URLSessionHTTPClient {
+            self.storedHTTPClient = injected.retargeted(to: baseURL)
+        } else {
+            self.storedHTTPClient = httpClient ?? URLSessionHTTPClient(baseURL: baseURL)
+        }
     }
 }

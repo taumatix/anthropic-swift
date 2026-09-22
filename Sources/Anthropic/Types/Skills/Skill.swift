@@ -7,7 +7,12 @@ import Foundation
 public struct SkillSource: Sendable, Decodable, Equatable {
     /// The source values documented at
     /// <https://platform.claude.com/docs/en/api/skills/list> (retrieved 2026-09-22).
-    public enum Kind: Sendable, Equatable {
+    ///
+    /// `unknown` carries the string the API sent, so the mapping is total in both directions and a
+    /// value Anthropic adds later can be round-tripped — decoded from a response and sent straight
+    /// back as a filter — without this SDK having to know it. Follows `Model`, which is open to
+    /// arbitrary strings for the same reason.
+    public enum Kind: RawRepresentable, Sendable, Hashable {
         /// Authored by the platform user; private to their workspace.
         case custom
         /// Published by Anthropic; shared and read-only.
@@ -16,14 +21,42 @@ public struct SkillSource: Sendable, Decodable, Equatable {
         case anthropicExample
         /// Resolved from an installed plugin.
         case plugin
-        /// A source this SDK version does not know. Read ``SkillSource/rawType`` for the value.
-        case unknown
+        /// A source this SDK version does not know, with the value the API sent.
+        case unknown(String)
+
+        /// The four sources documented today. `unknown` is excluded: it has no fixed value.
+        public static let documented: [Kind] = [.custom, .anthropic, .anthropicExample, .plugin]
+
+        public init(rawValue: String) {
+            switch rawValue {
+            case "custom": self = .custom
+            case "anthropic": self = .anthropic
+            case "anthropic_example": self = .anthropicExample
+            case "plugin": self = .plugin
+            default: self = .unknown(rawValue)
+            }
+        }
+
+        public var rawValue: String {
+            switch self {
+            case .custom: return "custom"
+            case .anthropic: return "anthropic"
+            case .anthropicExample: return "anthropic_example"
+            case .plugin: return "plugin"
+            case .unknown(let raw): return raw
+            }
+        }
     }
 
-    /// The source, or ``Kind/unknown`` if the API returned a value this SDK predates.
+    /// The source. ``Kind/unknown(_:)`` if the API returned a value this SDK predates.
     public let type: Kind
+
     /// The `type` string exactly as the API returned it.
-    public let rawType: String
+    public var rawType: String { type.rawValue }
+
+    public init(type: Kind) {
+        self.type = type
+    }
 
     private enum CodingKeys: String, CodingKey {
         case type
@@ -31,15 +64,7 @@ public struct SkillSource: Sendable, Decodable, Equatable {
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        let raw = try container.decode(String.self, forKey: .type)
-        self.rawType = raw
-        switch raw {
-        case "custom": self.type = .custom
-        case "anthropic": self.type = .anthropic
-        case "anthropic_example": self.type = .anthropicExample
-        case "plugin": self.type = .plugin
-        default: self.type = .unknown
-        }
+        self.type = Kind(rawValue: try container.decode(String.self, forKey: .type))
     }
 }
 
@@ -107,21 +132,16 @@ public struct Skill: Sendable, Decodable, Equatable {
 /// The response returned by ``SkillsService/delete(id:)``.
 ///
 /// Documented at <https://platform.claude.com/docs/en/api/skills/delete> (retrieved 2026-09-22).
-public struct DeletedSkill: Sendable, Decodable, Equatable {
+/// Named to match `FileDeleteResponse`, `BatchDeleteResponse` and `InviteDeleteResponse`.
+///
+/// Both fields are required. Defaulting `type` would let any `200` carrying an `id` decode as a
+/// confirmed deletion, and a caller who only checks "did it throw" would be told a delete happened
+/// that did not.
+public struct SkillDeleteResponse: Sendable, Decodable, Equatable {
     /// Unique identifier for the deleted skill.
     public let id: String
     /// Deleted object type. Always `"skill_deleted"`.
     public let type: String
-
-    private enum CodingKeys: String, CodingKey {
-        case id, type
-    }
-
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.id = try container.decode(String.self, forKey: .id)
-        self.type = try container.decodeIfPresent(String.self, forKey: .type) ?? "skill_deleted"
-    }
 }
 
 /// Request to create a skill.

@@ -17,6 +17,15 @@ public final class URLSessionHTTPClient: HTTPClient, @unchecked Sendable {
         self.baseURL = baseURL
     }
 
+    /// Returns a copy pointed at `baseURL`, keeping this client's `URLSession`.
+    ///
+    /// Lets `ClientConfiguration` honour a `baseURL` change without discarding a session the
+    /// caller configured for TLS pinning or a proxy.
+    func retargeted(to baseURL: URL) -> URLSessionHTTPClient {
+        guard baseURL != self.baseURL else { return self }
+        return URLSessionHTTPClient(session: session, baseURL: baseURL)
+    }
+
     // MARK: - HTTPClient
 
     public func send(_ request: HTTPRequest) async throws -> HTTPResponse {

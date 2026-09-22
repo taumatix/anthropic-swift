@@ -1,5 +1,6 @@
 import XCTest
 @testable import Anthropic
+import AnthropicTestSupport
 
 /// Decoding assertions for the Skills API object, written against the literal response bodies
 /// published by Anthropic rather than against fixtures this SDK invented.
@@ -13,57 +14,14 @@ import XCTest
 ///
 /// The beta and GA documents describe the *same* object and the *same* envelope. That is the
 /// finding these tests exist to pin: there is no shape in which a `name` key is returned.
+///
+/// The bodies live in `MockResponses.skill*`, per the repo's fixture convention.
 final class SkillDecodingTests: XCTestCase {
-
-    // MARK: - Fixtures copied verbatim from the documentation
-
-    /// The `Response (200)` example on the Get Skill page.
-    static let skillObjectJSON = Data("""
-    {
-      "id": "skill_01JAbcdefghijklmnopqrstuvw",
-      "created_at": "2024-10-30T23:58:27.427722Z",
-      "display_name": "display_name",
-      "latest_version_id": "latest_version_id",
-      "source": {
-        "type": "custom"
-      },
-      "type": "skill",
-      "updated_at": "2024-10-30T23:58:27.427722Z"
-    }
-    """.utf8)
-
-    /// The `Response (200)` example on the List Skills page.
-    static let skillListJSON = Data("""
-    {
-      "data": [
-        {
-          "id": "skill_01JAbcdefghijklmnopqrstuvw",
-          "created_at": "2024-10-30T23:58:27.427722Z",
-          "display_name": "display_name",
-          "latest_version_id": "latest_version_id",
-          "source": {
-            "type": "custom"
-          },
-          "type": "skill",
-          "updated_at": "2024-10-30T23:58:27.427722Z"
-        }
-      ],
-      "next_page": "next_page"
-    }
-    """.utf8)
-
-    /// The `Response (200)` example on the Delete Skill page.
-    static let deletedSkillJSON = Data("""
-    {
-      "id": "skill_01JAbcdefghijklmnopqrstuvw",
-      "type": "skill_deleted"
-    }
-    """.utf8)
 
     // MARK: - The skill object
 
     func testDecodesTheDocumentedSkillObject() throws {
-        let skill = try JSONCoding.decoder.decode(Skill.self, from: Self.skillObjectJSON)
+        let skill = try JSONCoding.decoder.decode(Skill.self, from: MockResponses.skillObject)
 
         XCTAssertEqual(skill.id, "skill_01JAbcdefghijklmnopqrstuvw")
         XCTAssertEqual(skill.type, "skill")
@@ -92,14 +50,26 @@ final class SkillDecodingTests: XCTestCase {
 
         let future = try JSONCoding.decoder.decode(
             SkillSource.self, from: Data("{\"type\":\"marketplace\"}".utf8))
-        XCTAssertEqual(future.type, .unknown)
+        XCTAssertEqual(future.type, .unknown("marketplace"))
         XCTAssertEqual(future.rawType, "marketplace", "the unrecognised value must survive decoding")
+    }
+
+    /// `Kind` must round-trip, so a source decoded from a response can be sent straight back as a
+    /// filter — including one this SDK does not know.
+    func testSourceKindRoundTripsThroughItsRawValue() {
+        for kind in SkillSource.Kind.documented {
+            XCTAssertEqual(SkillSource.Kind(rawValue: kind.rawValue), kind)
+        }
+        XCTAssertEqual(SkillSource.Kind.documented.map(\.rawValue),
+                       ["custom", "anthropic", "anthropic_example", "plugin"])
+        XCTAssertEqual(SkillSource.Kind(rawValue: "marketplace").rawValue, "marketplace")
     }
 
     /// `name` predates the GA object and is kept as an alias so existing call sites compile.
     @available(*, deprecated, message: "exercises deprecated API on purpose")
     func testNameAliasesDisplayName() throws {
-        let skill = try JSONCoding.decoder.decode(Skill.self, from: Self.skillObjectJSON)
+        let skill = try JSONCoding.decoder.decode(Skill.self, from: MockResponses.skillObject)
+        XCTAssertEqual(skill.name, "display_name")
         XCTAssertEqual(skill.name, skill.displayName)
     }
 
@@ -114,15 +84,32 @@ final class SkillDecodingTests: XCTestCase {
         XCTAssertEqual(skill.description, "A skill")
         XCTAssertNil(skill.latestVersionId)
         XCTAssertNil(skill.source)
+        XCTAssertNil(skill.updatedAt)
+    }
+
+    /// `type` defaults rather than throwing, since it is a constant the API always sends.
+    func testTypeDefaultsWhenAbsent() throws {
+        let noType = Data("""
+        {"id":"skill_01","display_name":"One","created_at":"2025-01-01"}
+        """.utf8)
+        XCTAssertEqual(try JSONCoding.decoder.decode(Skill.self, from: noType).type, "skill")
+    }
+
+    /// Neither `display_name` nor `name`: there is no label to invent, so this must throw.
+    func testThrowsWhenNoLabelIsPresent() {
+        let unlabelled = Data("""
+        {"id":"skill_01","type":"skill","created_at":"2025-01-01"}
+        """.utf8)
+        XCTAssertThrowsError(try JSONCoding.decoder.decode(Skill.self, from: unlabelled))
     }
 
     // MARK: - The list envelope
 
     func testDecodesTheDocumentedListEnvelope() throws {
-        let page = try JSONCoding.decoder.decode(Page<Skill>.self, from: Self.skillListJSON)
+        let page = try JSONCoding.decoder.decode(Page<Skill>.self, from: MockResponses.skillList)
 
         XCTAssertEqual(page.data.count, 1)
-        XCTAssertEqual(page.nextPage, "next_page")
+        XCTAssertEqual(page.nextPageToken, "next_page")
         XCTAssertTrue(page.hasMore, "a non-null next_page means there is another page")
     }
 
@@ -132,7 +119,7 @@ final class SkillDecodingTests: XCTestCase {
         {"data":[],"next_page":null}
         """.utf8)
         let page = try JSONCoding.decoder.decode(Page<Skill>.self, from: last)
-        XCTAssertNil(page.nextPage)
+        XCTAssertNil(page.nextPageToken)
         XCTAssertFalse(page.hasMore)
     }
 
@@ -145,14 +132,59 @@ final class SkillDecodingTests: XCTestCase {
         XCTAssertTrue(page.hasMore)
         XCTAssertEqual(page.firstId, "a")
         XCTAssertEqual(page.lastId, "z")
-        XCTAssertNil(page.nextPage)
+        XCTAssertNil(page.nextPageToken)
+    }
+
+    /// An envelope with neither cursor reports no more pages rather than throwing. Documented
+    /// here because it is a deliberate choice and it can truncate a list silently — `has_more` was
+    /// a required key before the token cursor was added.
+    func testEnvelopeWithNeitherCursorReportsNoMorePages() throws {
+        let bare = Data("""
+        {"data":[]}
+        """.utf8)
+        let page = try JSONCoding.decoder.decode(Page<Skill>.self, from: bare)
+        XCTAssertFalse(page.hasMore)
+        XCTAssertNil(page.nextPageToken)
+        XCTAssertNil(page.lastId)
+    }
+
+    /// `hasMore` with no cursor and no fetcher must terminate, not loop or trap.
+    func testFetchNextPageReturnsNilWithoutACursor() async throws {
+        let fetcherCalled = LockedFlag()
+        let page = Page<Skill>(
+            data: [], hasMore: true, firstId: nil, lastId: nil, nextPageToken: nil,
+            nextPageFetcher: { _ in
+                fetcherCalled.set()
+                return Page(data: [], hasMore: false, firstId: nil, lastId: nil)
+            }
+        )
+        let next = try await page.fetchNextPage()
+        XCTAssertNil(next)
+        XCTAssertFalse(fetcherCalled.value, "there was no cursor to fetch with")
     }
 
     // MARK: - Delete
 
     func testDecodesTheDocumentedDeleteResponse() throws {
-        let deleted = try JSONCoding.decoder.decode(DeletedSkill.self, from: Self.deletedSkillJSON)
+        let deleted = try JSONCoding.decoder.decode(
+            SkillDeleteResponse.self, from: MockResponses.skillDeleted)
         XCTAssertEqual(deleted.id, "skill_01JAbcdefghijklmnopqrstuvw")
         XCTAssertEqual(deleted.type, "skill_deleted")
     }
+
+    /// `type` is required: a bare `{"id": …}` must not read as a confirmed deletion.
+    func testDeleteResponseRequiresItsType() {
+        let bare = Data("""
+        {"id":"skill_01"}
+        """.utf8)
+        XCTAssertThrowsError(try JSONCoding.decoder.decode(SkillDeleteResponse.self, from: bare))
+    }
+}
+
+/// A `Sendable` boolean a `@Sendable` closure can set.
+final class LockedFlag: @unchecked Sendable {
+    private let lock = NSLock()
+    private var flag = false
+    var value: Bool { lock.withLock { flag } }
+    func set() { lock.withLock { flag = true } }
 }

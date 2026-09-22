@@ -58,10 +58,15 @@ public final class SkillsService: Sendable {
     ///   without sending a request.
     public func create(files: [SkillFile], displayName: String? = nil) async throws -> Skill {
         guard !files.isEmpty else {
-            throw Self.invalidFileSet("A skill must be created from at least one file, including a SKILL.md.")
+            throw Self.invalidFileSet(files, "A skill must be created from at least one file, including a SKILL.md.")
         }
-        guard files.contains(where: { $0.path.hasSuffix("SKILL.md") }) else {
-            throw Self.invalidFileSet("A skill's file set must include a SKILL.md at the root of its directory.")
+        // Compare the last path component, not a suffix: `hasSuffix("SKILL.md")` also accepts
+        // `MYSKILL.md`. Layout beyond this is the API's to adjudicate.
+        guard files.contains(where: { ($0.path as NSString).lastPathComponent == "SKILL.md" }) else {
+            throw Self.invalidFileSet(files, "A skill's file set must include a file named SKILL.md.")
+        }
+        guard !files.contains(where: { $0.path.split(separator: "/").contains("..") }) else {
+            throw Self.invalidFileSet(files, "A skill file path must not contain a '..' component.")
         }
 
         var form = MultipartFormData()
@@ -97,16 +102,18 @@ public final class SkillsService: Sendable {
     /// The returned ``Page`` is an `AsyncSequence` that follows `next_page` as items are consumed.
     ///
     /// - Parameters:
-    ///   - limit: Results per page, 1...1000. The API defaults to 20.
-    ///   - page: A `next_page` token from a previous response. `nil` returns the first page.
+    ///   - limit: Results per page. The API accepts 1...1000 and defaults to 20; a value outside
+    ///     that range is passed through and rejected by the server.
+    ///   - pageToken: A ``Page/nextPageToken`` from a previous response. `nil` returns the first
+    ///     page.
     ///   - source: Return only skills from this source.
     public func list(
         limit: Int? = nil,
-        page: String? = nil,
+        pageToken: String? = nil,
         source: SkillSource.Kind? = nil
     ) async throws -> Page<Skill> {
         let result: Page<Skill> = try await pipeline.send(
-            Self.listRequest(limit: limit, page: page, source: source))
+            Self.listRequest(limit: limit, pageToken: pageToken, source: source))
         return attachFetcher(to: result, limit: limit, source: source)
     }
 
@@ -114,45 +121,60 @@ public final class SkillsService: Sendable {
     ///
     /// - Warning: The Skills API paginates by opaque token, not by item id — `after_id` is ignored.
     ///   Use ``list(limit:page:source:)``.
-    @available(*, deprecated, message: "The Skills API paginates by token. Use list(limit:page:source:).")
+    @available(*, deprecated, message: "The Skills API paginates by token. Use list(limit:pageToken:source:).")
     public func list(limit: Int? = nil, afterId: String?) async throws -> Page<Skill> {
         var queryItems = PaginationCursor(afterId: afterId).queryItems
         if let limit = limit { queryItems.append(URLQueryItem(name: "limit", value: "\(limit)")) }
         let request = HTTPRequest(method: "GET", path: "/v1/skills", queryItems: queryItems)
-        let result: Page<Skill> = try await pipeline.send(request)
-        return attachFetcher(to: result, limit: limit, source: nil)
+        // No fetcher. This overload's response is an id-cursor page, and handing its `lastId` to
+        // the token fetcher would re-request the same page under `page=` forever against a server
+        // that ignores an unknown parameter. Iteration therefore stops at one page, which is the
+        // honest outcome for a cursor the API does not implement.
+        return try await pipeline.send(request)
     }
 
     // MARK: - Get
 
     /// Returns a specific skill.
     public func get(id: String) async throws -> Skill {
-        try await pipeline.send(HTTPRequest(method: "GET", path: "/v1/skills/\(id)"))
+        try await pipeline.send(HTTPRequest(method: "GET", path: Self.skillPath(id)))
     }
 
     // MARK: - Delete
 
     /// Deletes a skill.
     @discardableResult
-    public func delete(id: String) async throws -> DeletedSkill {
-        try await pipeline.send(HTTPRequest(method: "DELETE", path: "/v1/skills/\(id)"))
+    public func delete(id: String) async throws -> SkillDeleteResponse {
+        try await pipeline.send(HTTPRequest(method: "DELETE", path: Self.skillPath(id)))
     }
 
     // MARK: - Helpers
 
-    private static func listRequest(limit: Int?, page: String?, source: SkillSource.Kind?) -> HTTPRequest {
+    /// Builds `/v1/skills/{id}` with the id percent-encoded.
+    ///
+    /// `HTTPRequest.urlRequest` uses `appendingPathComponent`, which leaves `/` and `..` intact, so
+    /// an unencoded id of `../organizations/api_keys` would retarget the request to a different
+    /// endpoint carrying the caller's key.
+    static func skillPath(_ id: String) -> String {
+        let encoded = id.addingPercentEncoding(withAllowedCharacters: .anthropicPathComponent) ?? id
+        return "/v1/skills/\(encoded)"
+    }
+
+    private static func listRequest(limit: Int?, pageToken: String?, source: SkillSource.Kind?) -> HTTPRequest {
         var queryItems: [URLQueryItem] = []
         if let limit = limit { queryItems.append(URLQueryItem(name: "limit", value: "\(limit)")) }
-        if let page = page { queryItems.append(URLQueryItem(name: "page", value: page)) }
-        if let source = source, let raw = source.wireValue {
-            queryItems.append(URLQueryItem(name: "source", value: raw))
+        if let pageToken = pageToken { queryItems.append(URLQueryItem(name: "page", value: pageToken)) }
+        if let source = source {
+            // `rawValue` is total, including for `.unknown`, so asking for a source this SDK does
+            // not know still sends the filter rather than silently returning everything.
+            queryItems.append(URLQueryItem(name: "source", value: source.rawValue))
         }
         return HTTPRequest(method: "GET", path: "/v1/skills", queryItems: queryItems)
     }
 
-    private static func invalidFileSet(_ reason: String) -> AnthropicError {
+    private static func invalidFileSet(_ files: [SkillFile], _ reason: String) -> AnthropicError {
         .encodingError(EncodingError.invalidValue(
-            [SkillFile](),
+            files,
             .init(codingPath: [], debugDescription: reason)
         ))
     }
@@ -177,26 +199,23 @@ public final class SkillsService: Sendable {
             hasMore: page.hasMore,
             firstId: page.firstId,
             lastId: page.lastId,
-            nextPage: page.nextPage,
+            nextPageToken: page.nextPageToken,
             nextPageFetcher: { token in
                 let next: Page<Skill> = try await pipeline.send(
-                    listRequest(limit: limit, page: token, source: source))
+                    listRequest(limit: limit, pageToken: token, source: source))
                 return attachFetcher(to: next, pipeline: pipeline, limit: limit, source: source)
             }
         )
     }
 }
 
-extension SkillSource.Kind {
-    /// The string the API uses for this source, or `nil` for ``SkillSource/Kind/unknown``, which
-    /// has no wire value to send.
-    var wireValue: String? {
-        switch self {
-        case .custom: return "custom"
-        case .anthropic: return "anthropic"
-        case .anthropicExample: return "anthropic_example"
-        case .plugin: return "plugin"
-        case .unknown: return nil
-        }
-    }
+extension CharacterSet {
+    /// Characters safe to leave unencoded inside a single path component.
+    ///
+    /// `urlPathAllowed` permits `/`, which would let an identifier escape its component.
+    static let anthropicPathComponent: CharacterSet = {
+        var set = CharacterSet.urlPathAllowed
+        set.remove(charactersIn: "/")
+        return set
+    }()
 }

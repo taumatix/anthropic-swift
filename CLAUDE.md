@@ -37,14 +37,23 @@ in `Sources/Anthropic/Internal/JSONCoding.swift` provide consistent snake_case k
 conversion across the entire SDK.
 
 ### A service that sends `anthropic-beta` hardcodes the version string
-`FilesService` and `SkillsService` each declare `private let betaHeader: String = "..."` as a
-type-level constant, so the pinned version is explicit and changes in one place.
+`FilesService` declares `private let betaHeader: String = "..."` as a type-level constant, so the
+pinned version is explicit and changes in one place. It is the only service that still sends one.
 
-**Both of those APIs have since left beta** (checked 2026-09-21; see `UPSTREAM.md`). The headers are
-still sent, which keeps Files on the beta response shapes and leaves Skills on a header the docs no
-longer mention at all. Do not treat either service as beta when reasoning about its surface, and do
-not copy this pattern for a new service without checking whether the endpoint is GA. Migrating both
-is tracked in `ROADMAP.md`.
+`SkillsService` sends no beta header: it moved to GA on 2026-09-22, and the beta endpoint returned
+the same shapes as GA anyway. **A GA service sends no `anthropic-beta`**; a caller who wants one
+supplies it through `ClientOptions.additionalHeaders`, which needs no per-service API. Do not add a
+`betaHeader` to a new service without first checking whether the endpoint is GA. The Files
+migration is tracked in `ROADMAP.md`.
+
+### A fixture is a claim about the API, so cite where it came from
+`Skill` decoded a `name` key the Skills API has never returned, and the suite was green for six
+months because `MockResponses` and the service tests asserted the same invented shape. A test that
+decodes with the same assumption that encoded proves self-consistency, not correctness.
+
+New fixtures are copied verbatim from the vendor's published `Response (200)` body, with the URL
+and the date retrieved in a comment beside them — see the `skill*` entries in `MockResponses.swift`.
+An uncited fixture describes this SDK, not the API.
 
 ---
 
@@ -78,7 +87,7 @@ AnthropicClient
   ├── batches:  BatchesService
   ├── models:   ModelsService
   ├── files:    FilesService       (GA; still sends the beta header — see UPSTREAM.md)
-  ├── skills:   SkillsService      (GA; still sends the beta header — see UPSTREAM.md)
+  ├── skills:   SkillsService      (GA; no beta header since 2026-09-22)
   └── admin:    AdminServices
         ├── workspaces: WorkspacesService
         ├── apiKeys:    APIKeysService
@@ -106,7 +115,7 @@ AnthropicClient
 swift test
 
 # Integration tests (requires live API key)
-ANTHROPIC_API_KEY=sk-ant-... swift test --filter Integration
+ANTHROPIC_API_KEY=sk-ant-... swift test --filter Live
 
 # Build only
 swift build
