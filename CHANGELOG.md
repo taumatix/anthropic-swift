@@ -39,6 +39,11 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- `Model.claudeFable51` (`claude-fable-5-1`) and `Model.claudeOpus55` (`claude-opus-5-5`). Two of
+  the four models on the docs' current-lineup table were missing, and `claudeFable5` and
+  `claudeOpus5` — both filed as *legacy* on that page — carried doc comments calling them "the
+  most capable widely released model" and "the current Opus". Nothing was removed; the two
+  superseded constants keep working and now say what they are.
 - `Skill.displayName`, `.latestVersionId`, `.source` and `.updatedAt`, matching the documented
   object. `SkillSource.Kind` is `RawRepresentable` with an `unknown(String)` case carrying the
   value the API sent, so a source added later decodes rather than failing the response, and can be

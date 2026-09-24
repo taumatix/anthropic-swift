@@ -163,15 +163,31 @@ because a live test that runs only on merge tells you after the fact.
 the cost is autocomplete and discoverability, which is why this sits below the beta headers.
 A model that is *retired*, though, stays in the list looking supported.
 
+**It already happened, and worse than "costs autocomplete" predicted.** On 2026-09-24 the docs'
+comparison table listed four current models and this SDK knew two of them; `claude-fable-5-1` and
+`claude-opus-5-5` were both absent. Worse than the missing constants: `claudeFable5`'s and
+`claudeOpus5`'s doc comments still called them "the most capable widely released model" and "the
+current Opus" while the same page filed both under *legacy*. So autocomplete steered callers to
+superseded models and the documentation agreed with it. Fixed by hand that day, with
+`ModelTests` split into current and legacy and citing the page and date — which turns the next
+occurrence into a failing assertion rather than an act of noticing, but only for a human who
+re-reads the page. The entry below is still the mechanical answer.
+
 **Shape:** a test that calls `client.models.list()` and reports IDs the API returns that the enum
 lacks, and enum cases the API no longer returns. Same auth problem as above, same gated-run
 answer. Deprecation belongs in the type, not in a changelog.
 
 ## Surface gaps against the official SDK
 
-**Today:** `UPSTREAM.md` pins `anthropic-sdk-python` at `v1.7.0` as a surface reference, but
+**Today:** `UPSTREAM.md` pins `anthropic-sdk-python` at `v1.8.0` as a surface reference, but
 nothing compares the two. The SDK claims all GA APIs plus Files, Skills and Admin; whether that
 is still true after an upstream release is unverified.
+
+Two named gaps from v1.8.0's release notes (2026-09-22), neither implemented here and neither
+covered by issue #4's `MessageRequest` catalogue: **inline tool definitions** and **MCP tool-list
+pinning**, both beta. The `anthropic-beta` enum read on 2026-09-24 carries `inline-tools-2026-09-15`
+and `mcp-client-2026-09-15`, which is where a reader can check what they are before anyone builds
+them here.
 
 **Shape:** diff this SDK's service methods against the official SDK's, record the result as
 entries here, and keep the comparison as a checked-in inventory rather than a one-off reading —

@@ -32,15 +32,23 @@ public struct Model: RawRepresentable, Sendable, Hashable, Codable, ExpressibleB
     // (`claude-3-5-sonnet`). The constant names mirror that, so `claudeOpus5` here and
     // `claude35Sonnet` below are both named after the ID they carry.
 
-    /// Claude Fable 5 — the most capable widely released model, for the most demanding reasoning
-    /// and long-horizon agentic work. Requires 30-day data retention; not available under ZDR.
+    /// Claude Fable 5.1 — for demanding reasoning and long-horizon agentic work, or when evals on
+    /// ``claudeOpus55`` at higher effort still fall short. 1M context, 128K max output.
+    /// Requires 30-day data retention; not available under ZDR.
+    public static let claudeFable51 = Model(rawValue: "claude-fable-5-1")
+
+    /// Claude Opus 5.5 — the default choice for most workloads, and for long-running agentic
+    /// coding and knowledge work. 1M context, 128K max output.
+    public static let claudeOpus55 = Model(rawValue: "claude-opus-5-5")
+
+    /// Claude Fable 5 — superseded by ``claudeFable51``; still available.
     public static let claudeFable5 = Model(rawValue: "claude-fable-5")
 
     /// Claude Mythos 5 — same capabilities and pricing as ``claudeFable5``, available only to
-    /// Project Glasswing participants. Use ``claudeFable5`` unless your organization takes part.
+    /// Project Glasswing participants. Use ``claudeFable51`` unless your organization takes part.
     public static let claudeMythos5 = Model(rawValue: "claude-mythos-5")
 
-    /// Claude Opus 5 — the current Opus, for complex agentic coding and enterprise work.
+    /// Claude Opus 5 — superseded by ``claudeOpus55``; still available.
     public static let claudeOpus5 = Model(rawValue: "claude-opus-5")
 
     /// Claude Opus 4.8 — the previous Opus generation.
