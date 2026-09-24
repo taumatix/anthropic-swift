@@ -8,8 +8,11 @@ import Anthropic
 ///
 /// Run integration tests with:
 /// ```
-/// ANTHROPIC_API_KEY=sk-ant-... swift test --filter Integration
+/// ANTHROPIC_API_KEY=sk-ant-... swift test --filter Live
 /// ```
+///
+/// `--filter` matches test-case and test-method names, not directories, so `--filter Integration`
+/// selects nothing and exits 0. The subclasses here are all named `Live*Tests`.
 class IntegrationTestCase: XCTestCase {
     var client: AnthropicClient!
 

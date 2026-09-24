@@ -33,15 +33,21 @@ swift build
 ### Running Tests
 
 ```bash
-# Unit + service tests (no network required)
-swift test
+# Unit, service and loopback end-to-end tests (no network required)
+swift test --skip Live
 
-# Integration tests (requires live API key)
-ANTHROPIC_API_KEY=sk-ant-... swift test --filter Integration
+# Live tests against api.anthropic.com (requires an API key)
+ANTHROPIC_API_KEY=sk-ant-... swift test --filter Live
 ```
 
-All unit and service tests must pass without network access. Integration tests skip
-automatically when `ANTHROPIC_API_KEY` is not set.
+`--filter` matches test-case and test-method names, not directories: `--filter Integration`
+selects nothing and exits 0 having tested nothing.
+
+All unit and service tests must pass without network access. Live tests skip automatically when
+`ANTHROPIC_API_KEY` is not set, and CI skips the whole **Integration Tests** job because this
+repository has no such secret — so a green CI run here says nothing about the real API. If you
+change request or response shapes, run the live tests yourself with your own key and say so in
+the PR.
 
 ## Adding a New API Endpoint
 
