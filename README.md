@@ -415,12 +415,24 @@ swift run BatchProcessing
 ## Running Tests
 
 ```bash
-# Unit + service tests (no network required)
-swift test
+# Unit, service and loopback end-to-end tests (no network required)
+swift test --skip Live
 
-# Integration tests (requires live API key)
-ANTHROPIC_API_KEY=sk-ant-... swift test --filter Integration
+# Live tests against api.anthropic.com (requires an API key)
+ANTHROPIC_API_KEY=sk-ant-... swift test --filter Live
 ```
+
+`swift test` filters on test-case and test-method names, not on directories, so `--filter
+Integration` selects nothing and exits 0 having run no test. The classes are `Live*Tests`.
+
+**What CI proves, and what it does not.** This repository has no `ANTHROPIC_API_KEY` secret, so
+the **Integration Tests** job is skipped on every run and every green build you see here was
+produced against `MockHTTPClient` and a loopback HTTP server. That covers encoding, decoding,
+pagination, retry, error mapping and the SSE parser. It cannot catch a request the API rejects,
+a response shape that changed, or a header this SDK stopped sending — the drift recorded in
+[`UPSTREAM.md`](UPSTREAM.md) is exactly that class of problem. Tracked in
+[#5](https://github.com/taumatix/anthropic-swift/issues/5); run the live tests yourself with your
+own key if that matters to you.
 
 ## Architecture
 

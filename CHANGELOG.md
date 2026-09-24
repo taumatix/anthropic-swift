@@ -27,8 +27,13 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   not with an id cursor.
 - CI's integration job matched no test case (`swift test --filter "Integration"` — the filter
   takes a test-case name, and `Integration` is only a directory), so it reported green while
-  running zero tests for as long as it existed. It now filters on `Live` and fails when no key is
-  present rather than passing vacuously.
+  running zero tests for as long as it existed. It now filters on `Live`, and a guard reads the
+  run's own summary and fails the job if every selected test skipped. The job itself is skipped,
+  not failed, when no `ANTHROPIC_API_KEY` secret is configured — the first spelling of this fix
+  failed instead, which left `main` red from 2026-09-22 with no repair available from inside the
+  repository. The README now says plainly that CI's green is against mocks only.
+- The README's own instruction for running the live tests carried the same dead filter
+  (`swift test --filter Integration`), so anyone following it ran nothing and saw success.
 - The fluent-builder example in the README did not compile: `ClientOptions()` requires an
   `apiKey`, and `additionalHeader(_:_:)` does not exist.
 

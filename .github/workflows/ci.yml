@@ -22,11 +22,56 @@ jobs:
       - name: Test (unit, service and loopback end-to-end; no outbound network)
         run: swift test --filter "AnthropicTests" --skip "Live"
 
+      - name: Self-test the live-coverage guard
+        run: sh .github/scripts/assert-live-tests-ran-selftest.sh
+
+  # `secrets` is not in the context set available to a job-level `if:`, so whether the key exists
+  # has to be turned into a job output before the live job can be gated on it. This job publishes
+  # a boolean, never the value.
+  preflight:
+    name: Preflight
+    runs-on: ubuntu-latest
+    outputs:
+      has_live_key: ${{ steps.probe.outputs.has_live_key }}
+    steps:
+      - name: Is a live API key configured?
+        id: probe
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -n "$ANTHROPIC_API_KEY" ]; then
+            echo "has_live_key=true" >> "$GITHUB_OUTPUT"
+            echo "ANTHROPIC_API_KEY is configured; the live API job will run." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "has_live_key=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Live API path not exercised::ANTHROPIC_API_KEY is not configured on this repository, so Integration Tests is skipped. Everything green on this run is against mocks and a loopback server, not api.anthropic.com. See issue #5."
+            {
+              echo "### Live API path not exercised"
+              echo
+              echo "\`ANTHROPIC_API_KEY\` is not configured on this repository, so the"
+              echo "**Integration Tests** job was skipped rather than run."
+              echo
+              echo "Everything green on this run is against \`MockHTTPClient\` and a loopback"
+              echo "HTTP server. Nothing here proves a request api.anthropic.com accepts, a"
+              echo "response shape that changed, or a header this SDK stopped sending."
+              echo
+              echo "Tracked in [#5](https://github.com/taumatix/anthropic-swift/issues/5)."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
   integration:
     name: Integration Tests
     runs-on: macos-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: test
+    needs: [test, preflight]
+    # Skipped, not failed, when there is no key. PR #10 made the no-key case a hard failure, which
+    # turned main red for every merge from 2026-09-22 with no fix available from inside the repo —
+    # the repository has no such secret and adding one needs a human. A permanently red main is a
+    # broken alarm; a visibly skipped job plus the Preflight warning keeps the information without
+    # training anyone to ignore the light.
+    if: >-
+      github.event_name == 'push'
+      && github.ref == 'refs/heads/main'
+      && needs.preflight.outputs.has_live_key == 'true'
     steps:
       - uses: actions/checkout@v4
 
@@ -38,17 +83,15 @@ jobs:
       # a real skill in the workspace behind the key, which is not something to do unattended on
       # every merge. Run it by hand when the Skills surface changes.
       - name: Integration Tests
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: swift test --filter "Live"
-
-      # A filter typo made this job vacuous once; fail loudly rather than pass silently if the
-      # key is absent and every live test skips itself.
-      - name: Fail if no live test actually ran
+        shell: bash
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          if [ -z "$ANTHROPIC_API_KEY" ]; then
-            echo "ANTHROPIC_API_KEY is not set: every live test skipped, so this job proved nothing."
-            exit 1
-          fi
+          set -o pipefail
+          swift test --filter "Live" 2>&1 | tee live-test.log
+
+      # The guard now reads what the run reported instead of testing a proxy for it. Checking
+      # `[ -z "$ANTHROPIC_API_KEY" ]` could not see the filter typo that caused the original
+      # vacuous green — a key was never the thing that made the job meaningless.
+      - name: Fail if no live test actually ran
+        run: sh .github/scripts/assert-live-tests-ran.sh live-test.log
