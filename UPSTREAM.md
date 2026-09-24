@@ -9,16 +9,16 @@ API you are calling.
 - name: anthropic-api-version
   kind: literal
   value: "2023-06-01"
-  checked: 2026-09-21
+  checked: 2026-09-24
   note: >-
     sent as the anthropic-version header on every request;
     ClientConfiguration.defaultAnthropicVersion. Still the newest version in the
-    docs' version history on 2026-09-21 (the only other entry is 2023-01-01).
+    docs' version history on 2026-09-24 (the only other entry is 2023-01-01).
 
 - name: files-api-beta
   kind: literal
   value: "files-api-2025-04-14"
-  checked: 2026-09-21
+  checked: 2026-09-24
   note: >-
     anthropic-beta header sent by FilesService. STALE: the Files API left beta. The
     header is now optional and requests that send it keep the beta response shapes,
@@ -29,20 +29,34 @@ API you are calling.
 - name: skills-api-beta
   kind: literal
   value: "skills-2025-10-02"
-  checked: 2026-09-22
+  checked: 2026-09-24
   hold: >-
     RETIRED FROM USE, not stale. SkillsService no longer sends this header — it is
     still a live beta value, but the beta endpoint returns the same object and the
     same {data, next_page} envelope as GA, so it changed nothing. Kept pinned so the
     next pass rechecks that claim; restore it with
-    ClientOptions.additionalHeaders if it ever diverges again.
+    ClientOptions.additionalHeaders if it ever diverges again. Rechecked 2026-09-24:
+    still in the beta enum (now 48 values), and the beta page's BetaSkill is still
+    field-for-field the GA Skill.
 
 - name: anthropic-sdk-python
   kind: github-release
   repo: anthropics/anthropic-sdk-python
-  tag: v1.7.0
-  checked: 2026-09-21
-  note: not ported from, but read as the reference for new API surface — what it gains, this lacks
+  tag: v1.8.0
+  checked: 2026-09-24
+  note: >-
+    not ported from, but read as the reference for new API surface — what it gains,
+    this lacks. v1.8.0 (2026-09-22) added claude-opus-5-5, inline tool definitions
+    and MCP tool-list pinning; only the model ID landed here.
+
+- name: model-ids
+  kind: literal
+  value: "fable-5-1, opus-5-5, sonnet-5, haiku-4-5"
+  checked: 2026-09-24
+  note: >-
+    the four current models per the docs' comparison table; Model.swift carries
+    these plus every legacy ID. A model released later still works — Model takes an
+    arbitrary string — so this pin costs autocomplete, not functionality.
 ```
 
 ## What each pin means for you
@@ -106,10 +120,25 @@ against the API directly. The official Python SDK is read to spot API surface th
 not implemented here — its gaining a feature is a signal this lacks one, which no test can
 produce.
 
-**Model identifiers are compiled in.** `Sources/Anthropic/Types/Common/Model.swift` carries a
-list of known model IDs. It is a convenience, not a constraint — the API takes a string, and
-`Model` accepts an arbitrary one, so a model released after this version still works. The
-compiled list going stale costs you autocomplete, not functionality.
+**Model identifiers are compiled in, and on 2026-09-24 half the current lineup was missing.**
+`Sources/Anthropic/Types/Common/Model.swift` carries a list of known model IDs. It is a
+convenience, not a constraint — the API takes a string, and `Model` accepts an arbitrary one, so
+a model released after this version still works, and the compiled list going stale costs you
+autocomplete rather than functionality.
+
+That is why it went stale. The docs' comparison table lists four current models — **Claude Fable
+5.1** (`claude-fable-5-1`), **Claude Opus 5.5** (`claude-opus-5-5`), Claude Sonnet 5 and Claude
+Haiku 4.5 — and this SDK knew only the last two. `claudeFable5` and `claudeOpus5` had doc comments
+calling them "the most capable widely released model" and "the current Opus"; both are on that
+page's *legacy* line. Autocomplete was steering callers to superseded models and the prose was
+agreeing with it. Both constants are added and both doc comments corrected; nothing was removed.
+
+`claude-mythos-5-1` is **not** added. The pricing footnote on that page names "Claude Mythos 5.1",
+but no row gives its API ID, and a model constant guessed from a product name is a 404 at runtime.
+It stays unlisted until an ID is published; `Model(rawValue:)` reaches it meanwhile.
+
+`ModelTests` now splits current from legacy and cites the page and the date it was read, so the
+next stale-list finding is one failing assertion rather than an act of noticing.
 
 ## How this file is kept honest
 
@@ -140,6 +169,19 @@ Pages read on 2026-09-22, when Skills was migrated:
 - <https://platform.claude.com/docs/en/api/beta/skills/list> — the `skills-2025-10-02` shape,
   identical to GA, and the live `anthropic-beta` enum that still contains it
 
-`anthropic-api-version` and `files-api-beta` keep their 2026-09-21 date on purpose: this pass was a
-roadmap pass on Skills and did not re-read the versioning or Files pages. A `checked` date moves
-only as far as a run actually verified.
+Pages read on 2026-09-24, the maintenance pass that moved every date to the same day:
+
+- <https://platform.claude.com/docs/en/api/versioning> — `2023-06-01` is still the newest entry;
+  the history still holds exactly two.
+- <https://platform.claude.com/docs/en/build-with-claude/files> — status `ga`, and the
+  "Migrate from `files-api-2025-04-14`" table still matches the one reproduced above row for row.
+  Migrating stays optional; requests that send the header keep the beta shapes.
+- <https://platform.claude.com/docs/en/api/beta/skills/list> — `skills-2025-10-02` is still in the
+  `anthropic-beta` enum, which now carries 48 values. `BetaSkill` is still field-for-field the GA
+  `Skill`, and `BetaSkillSource` still has the four kinds `SkillSource.Kind` already models.
+- <https://platform.claude.com/docs/en/about-claude/models/overview> — the comparison table that
+  showed two of the four current model IDs were missing here.
+
+The 2026-09-22 roadmap pass deliberately left `anthropic-api-version` and `files-api-beta` at
+2026-09-21, because that pass was about Skills and did not open those pages. That asymmetry is now
+gone: all five pins read 2026-09-24 because all five were actually checked.

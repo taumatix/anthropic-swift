@@ -6,7 +6,17 @@ import XCTest
 /// no round-trip test would catch, so these assert the literal string rather than re-deriving it.
 final class ModelTests: XCTestCase {
 
+    // The four current models as of 2026-09-24, read from the "Claude API ID" row of
+    // https://platform.claude.com/docs/en/about-claude/models/overview — not from recall.
+    // Everything in testLegacyModelRawValues below is on that page's "Legacy models" line.
     func testCurrentModelRawValues() {
+        XCTAssertEqual(Model.claudeFable51.rawValue, "claude-fable-5-1")
+        XCTAssertEqual(Model.claudeOpus55.rawValue, "claude-opus-5-5")
+        XCTAssertEqual(Model.claudeSonnet5.rawValue, "claude-sonnet-5")
+        XCTAssertEqual(Model.claudeHaiku45.rawValue, "claude-haiku-4-5")
+    }
+
+    func testLegacyModelRawValues() {
         XCTAssertEqual(Model.claudeFable5.rawValue, "claude-fable-5")
         XCTAssertEqual(Model.claudeMythos5.rawValue, "claude-mythos-5")
         XCTAssertEqual(Model.claudeOpus5.rawValue, "claude-opus-5")
