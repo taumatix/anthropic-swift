@@ -369,6 +369,32 @@ let client = AnthropicClient(
 `baseURL` retargets the SDK's HTTP client, so pointing it at a gateway or a proxy works through
 either form. A client you supply yourself keeps its own routing and is never replaced.
 
+### Where your API key is allowed to go
+
+The SDK authenticates with an `x-api-key` header, so two things about `baseURL` are enforced
+rather than documented:
+
+- **A plaintext `baseURL` is refused.** Anything that is not `https` throws
+  `AnthropicError.networkError` with `URLError.appTransportSecurityRequiresSecureConnection`
+  before a byte is sent. Loopback is exempt — `127.0.0.0/8`, `::1`, `localhost` and `*.localhost`
+  — because plaintext there does not leave the machine. Matching is exact, so
+  `http://localhost.example.com` is refused. If you genuinely have an internal plaintext gateway,
+  set `allowsInsecureBaseURL: true` (or `.allowsInsecureBaseURL(true)` on the builder) and your
+  key goes out in the clear, which is the point of having to write it.
+- **A redirect that changes origin is not followed.** `URLSession` follows redirects itself and
+  replays the original request onto the target, stripping nothing — so without this, anything able
+  to answer with a `302` could harvest your key. When the scheme, host or port changes, the SDK
+  refuses the hop and you get `AnthropicError.httpError(statusCode: 302, body:)`. Same-origin
+  redirects are followed normally, so a server moving a path still works.
+
+  Refusing, rather than following with the credentials removed, is deliberate. Stripping headers
+  protects the key and hands over everything else: `307` and `308` preserve the method and body, so
+  the foreign host would still receive your prompt, your system prompt and any file you were
+  uploading — and its reply would be decoded and returned to you as though Anthropic had sent it.
+
+If you route through a gateway that redirects to a different host, point `baseURL` at the host that
+actually answers.
+
 > **`timeout` is currently ignored.** It is stored on the configuration but never reaches the
 > `URLSession`, which uses its own 60-second default. Setting it has no effect today; a long
 > streaming turn can still fail at 60s as `AnthropicError.timeout`. Tracked at the top of

@@ -9,8 +9,44 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Security
+
+- **A redirect carried your API key, your prompt and your uploaded files to any host that asked.**
+  `URLSession` follows redirects itself and replays the original request onto the target, stripping
+  nothing — not `Authorization`, and not the `x-api-key` this SDK authenticates with. Two loopback
+  listeners confirmed it on 301, 302, 307 and 308, from both the unary and the streaming transport.
+  A redirect that changes scheme, host or port is now refused: the caller gets
+  `AnthropicError.httpError(statusCode: 302, body:)` naming the hop, instead of a request that
+  silently went somewhere else. Same-origin redirects are followed as before.
+
+  The first version of this fix stripped credential headers and let the redirect proceed. A
+  security review showed that was not enough, and the tests now encode why: `307` and `308`
+  preserve the method and body, so the foreign origin received the whole `POST /v1/messages` — the
+  prompt, system prompt and tool results — and, for an upload, the complete multipart body with the
+  filename and file bytes. Worse, nothing re-checked where a *response* came from, so the foreign
+  origin's body decoded into a `MessageResponse` and its SSE parsed into real stream events. An
+  application feeding assistant output into tool dispatch or a shell would have acted on
+  attacker-chosen content believing Anthropic sent it.
+- **A plaintext `baseURL` sent the key in cleartext.** `baseURL` began routing traffic in this same
+  unreleased cycle and nothing checked where it pointed, so an app reading its endpoint from
+  configuration could be downgraded to `http://` by whoever controlled that value. A non-`https`
+  `baseURL` is now refused before anything is sent, with
+  `URLError.appTransportSecurityRequiresSecureConnection`. Loopback (`127.0.0.0/8`, `::1`,
+  `localhost`, `*.localhost`) is exempt; matching is exact, so `http://localhost.evil.example` is
+  refused.
+
 ### Fixed
 
+- `MessageStream` reported a failure to build its request as `AnthropicError.encodingError` about
+  the path, whatever had actually gone wrong — the streaming path wrapped request construction in
+  `try?` and substituted a fabricated error. It now propagates the real one.
+- Assigning `ClientConfiguration.httpClient` skipped the retargeting that `baseURL` and
+  `allowsInsecureBaseURL` perform, so
+  `.baseURL(gateway).allowsInsecureBaseURL(true).httpClient(pinnedSession)` — the documented way to
+  supply a pinned or proxied `URLSession` — produced a transport still pointed at
+  `api.anthropic.com` with the opt-out unset. The configuration reported one policy and the
+  transport enforced another, in both directions: reordered, a transport built with
+  `allowsInsecureBaseURL: true` outlived a configuration saying `false`.
 - **`SkillsService` never worked.** `Skill` required a `name` key and `Page` required `has_more`;
   the Skills API returns neither, under the GA path or under `anthropic-beta: skills-2025-10-02`.
   Every `client.skills` call threw `AnthropicError.decodingError` from the first release. The
@@ -39,6 +75,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- `ClientConfiguration.allowsInsecureBaseURL` (default `false`) and the matching
+  `ClientOptions.allowsInsecureBaseURL(_:)`, for a caller with an internal plaintext gateway.
+  It waives the transport requirement and nothing else — a `file:` or `ftp:` `baseURL` stays
+  refused.
 - `Model.claudeFable51` (`claude-fable-5-1`) and `Model.claudeOpus55` (`claude-opus-5-5`). Two of
   the four models on the docs' current-lineup table were missing, and `claudeFable5` and
   `claudeOpus5` — both filed as *legacy* on that page — carried doc comments calling them "the

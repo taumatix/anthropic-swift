@@ -39,7 +39,7 @@ final class SkillsEndToEndTests: XCTestCase {
 
     func testListDecodesTheDocumentedBodyOverARealSocket() async throws {
         let client = try await startClient { _ in
-            (200, MockResponses.skillList)
+            .json(200, MockResponses.skillList)
         }
 
         let page = try await client.skills.list(limit: 2, source: .custom)
@@ -77,7 +77,7 @@ final class SkillsEndToEndTests: XCTestCase {
         """.utf8)
 
         let client = try await startClient { request in
-            request.query["page"] == "token_2" ? (200, second) : (200, first)
+            request.query["page"] == "token_2" ? .json(200, second) : .json(200, first)
         }
 
         var collected: [String] = []
@@ -97,7 +97,7 @@ final class SkillsEndToEndTests: XCTestCase {
 
     func testCreateSendsAMultipartFileSetOverARealSocket() async throws {
         let client = try await startClient { _ in
-            (200, MockResponses.skillObject)
+            .json(200, MockResponses.skillObject)
         }
 
         let manifest = Data("---\nname: my-skill\ndescription: does a thing\n---\n".utf8)
@@ -129,7 +129,7 @@ final class SkillsEndToEndTests: XCTestCase {
 
     /// A file set with no `SKILL.md` must be rejected before anything reaches the network.
     func testInvalidFileSetNeverReachesTheSocket() async throws {
-        let client = try await startClient { _ in (200, MockResponses.skillObject) }
+        let client = try await startClient { _ in .json(200, MockResponses.skillObject) }
 
         do {
             _ = try await client.skills.create(
@@ -145,8 +145,8 @@ final class SkillsEndToEndTests: XCTestCase {
     func testGetAndDeleteOverARealSocket() async throws {
         let client = try await startClient { request in
             request.method == "DELETE"
-                ? (200, MockResponses.skillDeleted)
-                : (200, MockResponses.skillObject)
+                ? .json(200, MockResponses.skillDeleted)
+                : .json(200, MockResponses.skillObject)
         }
 
         let skill = try await client.skills.get(id: "skill_01JAbcdefghijklmnopqrstuvw")
@@ -168,7 +168,7 @@ final class SkillsEndToEndTests: XCTestCase {
     /// `BaseURLRoutingTests` proves the client object was rebuilt. This proves a request actually
     /// arrives there, and covers the mutate-after-construction path specifically.
     func testMutatingBaseURLAfterConstructionRoutesToTheNewHost() async throws {
-        let server = try LoopbackHTTPServer { _ in (200, MockResponses.skillList) }
+        let server = try LoopbackHTTPServer { _ in .json(200, MockResponses.skillList) }
         self.server = server
         let baseURL = try await server.start()
 
@@ -187,7 +187,7 @@ final class SkillsEndToEndTests: XCTestCase {
     /// Injecting a client is the only way to supply a custom `URLSession`; doing so must not cost
     /// the caller the ability to set `baseURL`.
     func testAnInjectedURLSessionClientIsStillRetargeted() async throws {
-        let server = try LoopbackHTTPServer { _ in (200, MockResponses.skillList) }
+        let server = try LoopbackHTTPServer { _ in .json(200, MockResponses.skillList) }
         self.server = server
         let baseURL = try await server.start()
 
@@ -207,7 +207,7 @@ final class SkillsEndToEndTests: XCTestCase {
     /// A filename is caller-supplied. Unescaped, a `"` or CRLF in it would close the quoted
     /// parameter and forge further part headers.
     func testAFilenameCannotForgePartHeaders() async throws {
-        let client = try await startClient { _ in (200, MockResponses.skillObject) }
+        let client = try await startClient { _ in .json(200, MockResponses.skillObject) }
 
         let hostile = "a\";name=\"display_name\"\r\nX-Injected: yes\r\n\r\npwned\r\n--x--/SKILL.md"
         _ = try await client.skills.create(
@@ -235,7 +235,7 @@ final class SkillsEndToEndTests: XCTestCase {
         let errorBody = Data("""
         {"type":"error","error":{"type":"authentication_error","message":"invalid x-api-key"}}
         """.utf8)
-        let client = try await startClient { _ in (401, errorBody) }
+        let client = try await startClient { _ in .json(401, errorBody) }
 
         do {
             _ = try await client.skills.list()

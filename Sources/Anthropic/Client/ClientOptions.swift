@@ -29,6 +29,12 @@ public struct ClientOptions: Sendable {
         var copy = self; copy.configuration.baseURL = url; return copy
     }
 
+    /// Permits a plaintext, non-loopback ``ClientConfiguration/baseURL``. Default `false`, and the
+    /// key goes out in the clear when it is `true`.
+    public func allowsInsecureBaseURL(_ allowed: Bool) -> ClientOptions {
+        var copy = self; copy.configuration.allowsInsecureBaseURL = allowed; return copy
+    }
+
     public func anthropicVersion(_ version: String) -> ClientOptions {
         var copy = self; copy.configuration.anthropicVersion = version; return copy
     }

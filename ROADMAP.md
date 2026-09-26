@@ -3,28 +3,50 @@
 Ordered by how much each entry limits real deployments, not by how interesting it is to build.
 Each entry says what breaks today, so it can be judged on its own.
 
-## `baseURL` now routes traffic, and nothing guards where it points
+## Nothing checks where a *response* came from
 
-**Today:** until 2026-09-22 `baseURL` was ignored, so neither of these mattered. Now it decides
-where the SDK sends the caller's API key, and there are two ways to lose it:
+**Today:** the redirect guard refuses a hop that leaves the caller's origin, which closes the way
+an attacker could get a response decoded as Anthropic's. But that is a guard on the *request* path
+standing in for a property of the *response* path, and the SDK still has no notion of "this body
+arrived from the origin I asked". `RequestPipeline` hands `HTTPResponse` to a decoder without ever
+comparing `HTTPURLResponse.url` to `baseURL`.
 
-- **No scheme check.** `ClientOptions.baseURL(URL(string: "http://gateway")!)` sends `x-api-key`
-  in cleartext. An app that reads its endpoint from config or an environment variable can be
-  downgraded by whoever controls that value.
-- **No redirect policy.** `URLSessionHTTPClient` installs no `URLSessionTaskDelegate`, so
-  `URLSession` follows redirects and carries the custom `x-api-key` header onto the target,
-  including a cross-host one. A gateway — or anyone able to answer on a plaintext one — can `302`
-  the SDK to a host it controls and harvest the key. This applies to the default endpoint too; the
-  custom-`baseURL` case merely widens who can trigger it.
+It matters because the redirect guard is one mechanism and it can be bypassed by anything that
+does not go through `willPerformHTTPRedirection`: a caller-injected `HTTPClient` (the protocol is
+public and `MockHTTPClient` ships), a `URLProtocol` subclass registered by the app, or a future
+transport. The 2026-09-26 review demonstrated the consequence concretely — a foreign body decoded
+into a `MessageResponse` with `id=msg_forged` and text the caller would have acted on.
 
-**Why it is not simply done:** the loopback end-to-end tests deliberately use `http://127.0.0.1`,
-so a scheme check needs a loopback exemption that is not itself a bypass. The redirect delegate has
-to cover `URLSession.bytes(for:)` as well as `data(for:)`, so streaming needs the same treatment,
-and `URLSession.shared` cannot carry a per-client delegate — which ties this to the entry below.
+**Why it is not simply done:** `HTTPResponse` carries no URL today, so adding the check means
+widening an existing public struct (additively) and deciding what a mismatch *is* — a new error
+case breaks exhaustive `switch`es, so it has to reuse `httpError` or wait for a major. It also has
+to not fire on the legitimate same-origin redirect, which means comparing origins rather than URLs.
 
-**Shape:** reject a non-`https` `baseURL` unless its host is loopback; add a delegate that strips
-`x-api-key` and `anthropic-*` headers when a redirect changes host. Test both over the loopback
-server — a 302 to a second listener, asserting the second never sees the key.
+**Shape:** add `HTTPResponse.url` (optional, defaulted, so the memberwise init stays source
+compatible), populate it in `URLSessionHTTPClient`, and have `RequestPipeline` refuse a body whose
+origin is not the configured one. The end-to-end test is the forgery test that already exists,
+with the redirect guard disabled so the response path is what is under test.
+
+## The transport policy is enforced per request, not per configuration
+
+**Today:** `BaseURLPolicy.validate` runs inside `URLSessionHTTPClient.send`/`stream`. That is
+correct for the SDK's own transport and invisible to everything else. A caller who injects their
+own `HTTPClient` — which the README tells them to do for testing, and which is how a pinned
+`URLSession` gets in — is subject to no policy at all: their client can send the key to
+`http://anywhere` and the configuration that says `allowsInsecureBaseURL = false` will not stop it.
+
+The 2026-09-26 pass fixed the half of this that was a plumbing bug (assigning `httpClient` skipped
+the retarget, so configuration and transport disagreed). What is left is structural: the policy
+lives in one implementation of a public protocol rather than in the pipeline every request crosses.
+
+**Why it is not simply done:** moving the check into `RequestPipeline` changes where the error
+surfaces for anyone who already catches it, and `MockHTTPClient`-based tests deliberately use
+`http://` and unreachable hosts — several would start failing. It needs a way for a test double to
+declare itself exempt that is not also an exemption a production caller can reach for.
+
+**Shape:** validate in `RequestPipeline` before dispatch, with the exemption keyed on the client
+being a test double rather than on a flag. Keep the check in `URLSessionHTTPClient` as well; two
+guards on a credential is not duplication.
 
 ## Configuration that is stored and never applied
 

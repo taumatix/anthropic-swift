@@ -9,7 +9,7 @@ API you are calling.
 - name: anthropic-api-version
   kind: literal
   value: "2023-06-01"
-  checked: 2026-09-24
+  checked: 2026-09-26
   note: >-
     sent as the anthropic-version header on every request;
     ClientConfiguration.defaultAnthropicVersion. Still the newest version in the
@@ -18,7 +18,7 @@ API you are calling.
 - name: files-api-beta
   kind: literal
   value: "files-api-2025-04-14"
-  checked: 2026-09-24
+  checked: 2026-09-26
   note: >-
     anthropic-beta header sent by FilesService. STALE: the Files API left beta. The
     header is now optional and requests that send it keep the beta response shapes,
@@ -29,7 +29,7 @@ API you are calling.
 - name: skills-api-beta
   kind: literal
   value: "skills-2025-10-02"
-  checked: 2026-09-24
+  checked: 2026-09-26
   hold: >-
     RETIRED FROM USE, not stale. SkillsService no longer sends this header — it is
     still a live beta value, but the beta endpoint returns the same object and the
@@ -43,7 +43,7 @@ API you are calling.
   kind: github-release
   repo: anthropics/anthropic-sdk-python
   tag: v1.8.0
-  checked: 2026-09-24
+  checked: 2026-09-26
   note: >-
     not ported from, but read as the reference for new API surface — what it gains,
     this lacks. v1.8.0 (2026-09-22) added claude-opus-5-5, inline tool definitions
@@ -52,7 +52,7 @@ API you are calling.
 - name: model-ids
   kind: literal
   value: "fable-5-1, opus-5-5, sonnet-5, haiku-4-5"
-  checked: 2026-09-24
+  checked: 2026-09-26
   note: >-
     the four current models per the docs' comparison table; Model.swift carries
     these plus every legacy ID. A model released later still works — Model takes an
@@ -184,4 +184,23 @@ Pages read on 2026-09-24, the maintenance pass that moved every date to the same
 
 The 2026-09-22 roadmap pass deliberately left `anthropic-api-version` and `files-api-beta` at
 2026-09-21, because that pass was about Skills and did not open those pages. That asymmetry is now
-gone: all five pins read 2026-09-24 because all five were actually checked.
+gone: all five pins read the same date because all five were actually checked.
+
+Pages read on 2026-09-26, the roadmap pass that hardened `baseURL` and redirects. **Nothing
+drifted** — every pin is re-dated, not moved:
+
+- <https://platform.claude.com/docs/en/api/versioning> — `2023-06-01` is still the newest, and the
+  history still holds exactly two entries.
+- <https://platform.claude.com/docs/en/build-with-claude/files> — still `status: ga`, the header is
+  still optional, and the migration table still matches the one reproduced above row for row. One
+  addition worth knowing: a request sending `managed-agents-2026-04-01` *without*
+  `files-api-2025-04-14` now gets the GA shapes plus a compatibility affordance — `before_id` and
+  `after_id` are still accepted, and the list response carries `has_more`, `first_id` and `last_id`
+  alongside `next_page`. That does not change what this SDK sends, but it means the Files migration
+  entry cannot assume the two cursor styles are mutually exclusive.
+- <https://platform.claude.com/docs/en/api/beta/skills/list> — `skills-2025-10-02` is still in the
+  `anthropic-beta` enum, still 48 values. `BetaSkill` is still field-for-field the GA `Skill`, and
+  `BetaSkillSource` still has the four kinds `SkillSource.Kind` models.
+- <https://platform.claude.com/docs/en/about-claude/models/overview> — the same four current models
+  this SDK already knows. `claude-mythos-5-1` still appears only in the pricing footnote with no
+  API ID, so it still stays unlisted.
