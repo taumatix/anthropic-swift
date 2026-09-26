@@ -31,7 +31,13 @@ public final class URLSessionHTTPClient: HTTPClient, @unchecked Sendable {
     public func send(_ request: HTTPRequest) async throws -> HTTPResponse {
         let urlRequest = try request.urlRequest(baseURL: baseURL)
         do {
-            let (data, urlResponse) = try await session.data(for: urlRequest)
+            // The delegate is per-task, not per-session, which is why this works on
+            // `URLSession.shared` — a session created elsewhere (a caller's pinned or proxied one)
+            // keeps its own delegate and still gets the redirect guard.
+            let (data, urlResponse) = try await session.data(
+                for: urlRequest,
+                delegate: RedirectCredentialGuard.shared
+            )
             return try makeResponse(data: data, urlResponse: urlResponse)
         } catch let error as URLError {
             if error.code == .timedOut {
@@ -55,7 +61,10 @@ public final class URLSessionHTTPClient: HTTPClient, @unchecked Sendable {
         return AsyncThrowingStream { continuation in
             let task = Task {
                 do {
-                    let (asyncBytes, urlResponse) = try await self.session.bytes(for: urlRequest)
+                    let (asyncBytes, urlResponse) = try await self.session.bytes(
+                        for: urlRequest,
+                        delegate: RedirectCredentialGuard.shared
+                    )
                     // Validate status before streaming
                     if let httpResponse = urlResponse as? HTTPURLResponse,
                        !(200..<300).contains(httpResponse.statusCode) {
