@@ -12,24 +12,49 @@ public final class URLSessionHTTPClient: HTTPClient, @unchecked Sendable {
     private let session: URLSession
     let baseURL: URL
 
-    public init(session: URLSession = .shared, baseURL: URL = ClientConfiguration.defaultBaseURL) {
+    /// The caller's explicit opt-in to a plaintext `baseURL`. See ``BaseURLPolicy``.
+    let allowsInsecureBaseURL: Bool
+
+    public init(
+        session: URLSession = .shared,
+        baseURL: URL = ClientConfiguration.defaultBaseURL,
+        allowsInsecureBaseURL: Bool = false
+    ) {
         self.session = session
         self.baseURL = baseURL
+        self.allowsInsecureBaseURL = allowsInsecureBaseURL
     }
 
-    /// Returns a copy pointed at `baseURL`, keeping this client's `URLSession`.
+    /// Returns a copy pointed at `baseURL` under `allowsInsecureBaseURL`, keeping this client's
+    /// `URLSession`.
     ///
-    /// Lets `ClientConfiguration` honour a `baseURL` change without discarding a session the
+    /// Lets `ClientConfiguration` honour a change to either without discarding a session the
     /// caller configured for TLS pinning or a proxy.
-    func retargeted(to baseURL: URL) -> URLSessionHTTPClient {
-        guard baseURL != self.baseURL else { return self }
-        return URLSessionHTTPClient(session: session, baseURL: baseURL)
+    func reconfigured(baseURL: URL, allowsInsecureBaseURL: Bool) -> URLSessionHTTPClient {
+        guard baseURL != self.baseURL || allowsInsecureBaseURL != self.allowsInsecureBaseURL else {
+            return self
+        }
+        return URLSessionHTTPClient(
+            session: session,
+            baseURL: baseURL,
+            allowsInsecureBaseURL: allowsInsecureBaseURL
+        )
+    }
+
+    /// Builds the `URLRequest`, refusing first if `baseURL` cannot carry a credential.
+    ///
+    /// The check is here rather than on assignment because `ClientConfiguration.baseURL` is a
+    /// stored property and `didSet` cannot throw. Doing it per request also means a configuration
+    /// that is never used to send anything never refuses.
+    private func validatedURLRequest(for request: HTTPRequest) throws -> URLRequest {
+        try BaseURLPolicy.validate(baseURL, allowsInsecure: allowsInsecureBaseURL)
+        return try request.urlRequest(baseURL: baseURL)
     }
 
     // MARK: - HTTPClient
 
     public func send(_ request: HTTPRequest) async throws -> HTTPResponse {
-        let urlRequest = try request.urlRequest(baseURL: baseURL)
+        let urlRequest = try validatedURLRequest(for: request)
         do {
             // The delegate is per-task, not per-session, which is why this works on
             // `URLSession.shared` — a session created elsewhere (a caller's pinned or proxied one)
@@ -48,15 +73,14 @@ public final class URLSessionHTTPClient: HTTPClient, @unchecked Sendable {
     }
 
     public func stream(_ request: HTTPRequest) -> AsyncThrowingStream<Data, Error> {
-        guard let urlRequest = try? request.urlRequest(baseURL: baseURL) else {
-            return AsyncThrowingStream { continuation in
-                continuation.finish(throwing: AnthropicError.encodingError(
-                    EncodingError.invalidValue(
-                        request.path,
-                        .init(codingPath: [], debugDescription: "Could not build URL from path: \(request.path)")
-                    )
-                ))
-            }
+        // `try?` here used to discard whatever was thrown and substitute an `encodingError` about
+        // the path, which would now report a refused `baseURL` as a serialisation bug. Report what
+        // actually happened; `urlRequest(baseURL:)` already throws the path error itself.
+        let urlRequest: URLRequest
+        do {
+            urlRequest = try validatedURLRequest(for: request)
+        } catch {
+            return AsyncThrowingStream { $0.finish(throwing: error) }
         }
         return AsyncThrowingStream { continuation in
             let task = Task {
