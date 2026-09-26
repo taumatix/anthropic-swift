@@ -46,8 +46,41 @@ final class LoopbackHTTPServer: @unchecked Sendable {
         }
     }
 
+    /// What the server writes back.
+    ///
+    /// Carries headers because a redirect is only a redirect if it can send `Location`, and the
+    /// redirect-credential tests need one server to point at another.
+    struct Response: Sendable {
+        let status: Int
+        /// Merged into the response head as-is. `Content-Type` and `Content-Length` are supplied
+        /// by the server unless a header here overrides the former.
+        let headers: [String: String]
+        let body: Data
+
+        init(status: Int, headers: [String: String] = [:], body: Data = Data()) {
+            self.status = status
+            self.headers = headers
+            self.body = body
+        }
+
+        /// A JSON body, which is what every non-redirect fixture here is.
+        static func json(_ status: Int, _ body: Data) -> Response {
+            Response(status: status, body: body)
+        }
+
+        /// A redirect to `location`. The body is deliberately non-empty so a test that follows the
+        /// redirect by mistake fails on the body rather than on a decode of nothing.
+        static func redirect(_ status: Int = 302, to location: URL) -> Response {
+            Response(
+                status: status,
+                headers: ["Location": location.absoluteString],
+                body: Data(#"{"redirected":true}"#.utf8)
+            )
+        }
+    }
+
     /// Produces the response for a request. Called on the server's queue.
-    typealias Responder = @Sendable (ReceivedRequest) -> (status: Int, body: Data)
+    typealias Responder = @Sendable (ReceivedRequest) -> Response
 
     private let listener: NWListener
     private let queue = DispatchQueue(label: "com.taumatix.anthropic.loopback-http")
@@ -127,8 +160,7 @@ final class LoopbackHTTPServer: @unchecked Sendable {
             switch Self.parse(buffer) {
             case .complete(let request):
                 self.lock.withLock { self._requests.append(request) }
-                let (status, body) = self.responder(request)
-                self.respond(on: connection, status: status, body: body)
+                self.respond(on: connection, with: self.responder(request))
             case .unparseable:
                 connection.cancel()
             case .incomplete:
@@ -142,9 +174,15 @@ final class LoopbackHTTPServer: @unchecked Sendable {
         }
     }
 
-    private func respond(on connection: NWConnection, status: Int, body: Data) {
-        var head = "HTTP/1.1 \(status) \(Self.reason(for: status))\r\n"
-        head += "Content-Type: application/json\r\n"
+    private func respond(on connection: NWConnection, with response: Response) {
+        let body = response.body
+        var head = "HTTP/1.1 \(response.status) \(Self.reason(for: response.status))\r\n"
+        if response.headers.keys.first(where: { $0.lowercased() == "content-type" }) == nil {
+            head += "Content-Type: application/json\r\n"
+        }
+        for (name, value) in response.headers {
+            head += "\(name): \(value)\r\n"
+        }
         head += "Content-Length: \(body.count)\r\n"
         head += "Connection: close\r\n\r\n"
 
@@ -217,6 +255,10 @@ final class LoopbackHTTPServer: @unchecked Sendable {
     private static func reason(for status: Int) -> String {
         switch status {
         case 200: return "OK"
+        case 301: return "Moved Permanently"
+        case 302: return "Found"
+        case 307: return "Temporary Redirect"
+        case 308: return "Permanent Redirect"
         case 400: return "Bad Request"
         case 401: return "Unauthorized"
         case 404: return "Not Found"
