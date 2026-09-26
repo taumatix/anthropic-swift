@@ -381,15 +381,19 @@ rather than documented:
   `http://localhost.example.com` is refused. If you genuinely have an internal plaintext gateway,
   set `allowsInsecureBaseURL: true` (or `.allowsInsecureBaseURL(true)` on the builder) and your
   key goes out in the clear, which is the point of having to write it.
-- **A redirect that changes origin loses your credentials.** `URLSession` follows redirects
-  itself and replays the original request's headers onto the target, stripping nothing — so
-  without this, anything able to answer with a `302` could harvest your key. When the scheme, host
-  or port changes, the SDK keeps only content-negotiation and framing headers and drops the rest:
-  `x-api-key`, `anthropic-*`, and anything you added through `additionalHeaders`. Same-origin
-  redirects are untouched, so a server moving a path still works.
+- **A redirect that changes origin is not followed.** `URLSession` follows redirects itself and
+  replays the original request onto the target, stripping nothing — so without this, anything able
+  to answer with a `302` could harvest your key. When the scheme, host or port changes, the SDK
+  refuses the hop and you get `AnthropicError.httpError(statusCode: 302, body:)`. Same-origin
+  redirects are followed normally, so a server moving a path still works.
 
-If you route through a gateway that redirects to a different host, point `baseURL` at the host
-that actually answers — the redirect will not carry your key there for you.
+  Refusing, rather than following with the credentials removed, is deliberate. Stripping headers
+  protects the key and hands over everything else: `307` and `308` preserve the method and body, so
+  the foreign host would still receive your prompt, your system prompt and any file you were
+  uploading — and its reply would be decoded and returned to you as though Anthropic had sent it.
+
+If you route through a gateway that redirects to a different host, point `baseURL` at the host that
+actually answers.
 
 > **`timeout` is currently ignored.** It is stored on the configuration but never reaches the
 > `URLSession`, which uses its own 60-second default. Setting it has no effect today; a long

@@ -57,7 +57,16 @@ public struct ClientConfiguration: Sendable {
     /// with its `URLSession` preserved. Any other client keeps its own routing.
     public var httpClient: any HTTPClient {
         get { storedHTTPClient }
-        set { storedHTTPClient = newValue }
+        set {
+            storedHTTPClient = newValue
+            // Without this the setter was the one way into the configuration that skipped the
+            // policy: `.baseURL(gateway).allowsInsecureBaseURL(true).httpClient(pinnedSession)` —
+            // the documented way to supply a pinned or proxied URLSession — left the transport on
+            // the default host with the opt-out unset, so the configuration stated one policy and
+            // the transport enforced another. It ran in both directions: reordered, a transport
+            // built with `allowsInsecureBaseURL: true` outlived a configuration saying `false`.
+            retargetStoredHTTPClient()
+        }
     }
 
     private var storedHTTPClient: any HTTPClient

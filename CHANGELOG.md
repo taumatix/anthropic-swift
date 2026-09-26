@@ -11,15 +11,22 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Security
 
-- **A redirect carried your API key to any host that asked for it.** `URLSession` follows
-  redirects itself and replays the original request's headers onto the target, stripping nothing —
-  not `Authorization`, and not the `x-api-key` this SDK authenticates with. Two loopback listeners
-  confirmed it on 301, 302, 307 and 308, from both the unary and the streaming transport. Anything
-  able to answer with a `302` — a gateway you configured, a compromised one, or whoever can answer
-  on a plaintext endpoint — could harvest the key. A redirect that changes scheme, host or port now
-  keeps only content-negotiation and framing headers and drops everything else, including
-  `anthropic-*` and anything supplied through `additionalHeaders`. Same-origin redirects are
-  unchanged, so a server moving a path still works.
+- **A redirect carried your API key, your prompt and your uploaded files to any host that asked.**
+  `URLSession` follows redirects itself and replays the original request onto the target, stripping
+  nothing — not `Authorization`, and not the `x-api-key` this SDK authenticates with. Two loopback
+  listeners confirmed it on 301, 302, 307 and 308, from both the unary and the streaming transport.
+  A redirect that changes scheme, host or port is now refused: the caller gets
+  `AnthropicError.httpError(statusCode: 302, body:)` naming the hop, instead of a request that
+  silently went somewhere else. Same-origin redirects are followed as before.
+
+  The first version of this fix stripped credential headers and let the redirect proceed. A
+  security review showed that was not enough, and the tests now encode why: `307` and `308`
+  preserve the method and body, so the foreign origin received the whole `POST /v1/messages` — the
+  prompt, system prompt and tool results — and, for an upload, the complete multipart body with the
+  filename and file bytes. Worse, nothing re-checked where a *response* came from, so the foreign
+  origin's body decoded into a `MessageResponse` and its SSE parsed into real stream events. An
+  application feeding assistant output into tool dispatch or a shell would have acted on
+  attacker-chosen content believing Anthropic sent it.
 - **A plaintext `baseURL` sent the key in cleartext.** `baseURL` began routing traffic in this same
   unreleased cycle and nothing checked where it pointed, so an app reading its endpoint from
   configuration could be downgraded to `http://` by whoever controlled that value. A non-`https`
@@ -33,6 +40,13 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - `MessageStream` reported a failure to build its request as `AnthropicError.encodingError` about
   the path, whatever had actually gone wrong — the streaming path wrapped request construction in
   `try?` and substituted a fabricated error. It now propagates the real one.
+- Assigning `ClientConfiguration.httpClient` skipped the retargeting that `baseURL` and
+  `allowsInsecureBaseURL` perform, so
+  `.baseURL(gateway).allowsInsecureBaseURL(true).httpClient(pinnedSession)` — the documented way to
+  supply a pinned or proxied `URLSession` — produced a transport still pointed at
+  `api.anthropic.com` with the opt-out unset. The configuration reported one policy and the
+  transport enforced another, in both directions: reordered, a transport built with
+  `allowsInsecureBaseURL: true` outlived a configuration saying `false`.
 - **`SkillsService` never worked.** `Skill` required a `name` key and `Page` required `has_more`;
   the Skills API returns neither, under the GA path or under `anthropic-beta: skills-2025-10-02`.
   Every `client.skills` call threw `AnthropicError.decodingError` from the first release. The

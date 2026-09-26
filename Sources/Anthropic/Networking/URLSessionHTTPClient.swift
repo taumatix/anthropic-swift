@@ -5,7 +5,7 @@ import Foundation
 /// Uses `URLSession.data(for:delegate:)` for non-streaming requests and
 /// `URLSession.bytes(for:delegate:)` for streaming (SSE) requests.
 ///
-/// Both pass ``RedirectCredentialGuard`` as a *task* delegate, which is what lets the guard work
+/// Both pass ``CrossOriginRedirectGuard`` as a *task* delegate, which is what lets the guard work
 /// on `URLSession.shared` — a session-level delegate can only be set at session construction, and
 /// `.shared` does not accept one. A caller who injects their own `URLSession` keeps its
 /// configuration and its session delegate; note that a session delegate of theirs implementing
@@ -16,7 +16,9 @@ import Foundation
 /// `HTTPClient` protocol by building `URLRequest` values itself, without
 /// needing an out-of-band call path from `RequestPipeline`.
 public final class URLSessionHTTPClient: HTTPClient, @unchecked Sendable {
-    private let session: URLSession
+    /// Not `private`: `reconfigured(baseURL:allowsInsecureBaseURL:)` exists to carry a caller's
+    /// pinned or proxied session across a change, and a test has to be able to see that it did.
+    let session: URLSession
     let baseURL: URL
 
     /// The caller's explicit opt-in to a plaintext `baseURL`. See ``BaseURLPolicy``.
@@ -68,7 +70,7 @@ public final class URLSessionHTTPClient: HTTPClient, @unchecked Sendable {
             // keeps its own delegate and still gets the redirect guard.
             let (data, urlResponse) = try await session.data(
                 for: urlRequest,
-                delegate: RedirectCredentialGuard.shared
+                delegate: CrossOriginRedirectGuard.shared
             )
             return try makeResponse(data: data, urlResponse: urlResponse)
         } catch let error as URLError {
@@ -94,7 +96,7 @@ public final class URLSessionHTTPClient: HTTPClient, @unchecked Sendable {
                 do {
                     let (asyncBytes, urlResponse) = try await self.session.bytes(
                         for: urlRequest,
-                        delegate: RedirectCredentialGuard.shared
+                        delegate: CrossOriginRedirectGuard.shared
                     )
                     // Validate status before streaming
                     if let httpResponse = urlResponse as? HTTPURLResponse,

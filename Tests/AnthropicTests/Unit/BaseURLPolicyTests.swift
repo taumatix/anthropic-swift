@@ -61,6 +61,47 @@ final class BaseURLPolicyTests: XCTestCase {
         refuses("http://0.0.0.0")
     }
 
+    /// Exactly four octets. Without the count and empty-subsequence rules, `127.0.0.1.2` and
+    /// `127..0.0.1` both read as loopback.
+    func testAnAddressThatIsNotExactlyFourOctetsIsRefused() {
+        refuses("http://127.0.0.1.2")
+        refuses("http://127..0.0.1")
+        refuses("http://127.0.0")
+    }
+
+    /// `UInt8("+1")` is 1 and `UInt8("0177")` is 177, so the digit check is not redundant with the
+    /// range parse.
+    func testAnOctetThatIsNotPlainDigitsIsRefused() {
+        refuses("http://127.+0.0.1")
+        refuses("http://127.0.0.+1")
+        refuses("http://127.0177.0.1")
+    }
+
+    /// **A private address is not loopback.** Cleartext to another machine on a LAN is cleartext
+    /// on a wire someone else can read, so the exemption must not widen to `10/8`, `192.168/16`,
+    /// link-local, or mDNS names.
+    func testPrivateAndLinkLocalAddressesAreRefused() {
+        refuses("http://10.0.0.1")
+        refuses("http://192.168.1.1")
+        refuses("http://172.16.0.1")
+        refuses("http://169.254.1.1")
+        refuses("http://printer.local")
+        refuses("http://somehost.lan")
+    }
+
+    /// `::1` is the only IPv6 loopback. A prefix test on `::` would exempt these.
+    func testOtherIPv6AddressesAreRefused() {
+        refuses("http://[::2]")
+        refuses("http://[fe80::1]")
+        refuses("http://[::ffff:127.0.0.1]")
+        refuses("http://[::ffff:10.0.0.1]")
+    }
+
+    /// Fail closed when there is no host to judge.
+    func testAURLWithNoHostIsRefused() {
+        refuses("http:///v1/messages")
+    }
+
     // MARK: - Allowed
 
     func testHTTPSIsAllowedAnywhere() {
@@ -87,6 +128,15 @@ final class BaseURLPolicyTests: XCTestCase {
 
     func testHostComparisonIsCaseInsensitive() {
         allows("HTTP://LOCALHOST:8080")
+    }
+
+    /// `URL.host` unwraps a bracketed IPv6 literal on Darwin, so `isLoopback(_:)` never sees one.
+    /// The normalising branch is still there for a host carried as a string; test it where it is
+    /// reachable rather than leaving it as code no test can enter.
+    func testTheHostTestNormalisesABracketedIPv6Literal() {
+        XCTAssertTrue(BaseURLPolicy.isLoopbackHost("[::1]"))
+        XCTAssertTrue(BaseURLPolicy.isLoopbackHost("::1"))
+        XCTAssertFalse(BaseURLPolicy.isLoopbackHost("[::2]"))
     }
 
     // MARK: - Opt out

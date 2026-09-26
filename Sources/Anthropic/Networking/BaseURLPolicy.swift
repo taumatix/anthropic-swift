@@ -21,34 +21,73 @@ enum BaseURLPolicy {
     static func validate(_ url: URL, allowsInsecure: Bool) throws {
         let scheme = url.scheme?.lowercased()
         guard scheme == "https" || scheme == "http" else {
-            throw refusal
+            throw refusal(for: url, reason: "only https and http base URLs are supported")
         }
         guard scheme == "https" || allowsInsecure || isLoopback(url) else {
-            throw refusal
+            throw refusal(
+                for: url,
+                reason: "a plaintext base URL would send your API key in the clear. Use https, a "
+                    + "loopback address, or set ClientConfiguration.allowsInsecureBaseURL = true "
+                    + "to accept the risk"
+            )
         }
     }
 
-    private static var refusal: AnthropicError {
-        .networkError(URLError(.appTransportSecurityRequiresSecureConnection))
+    private static func refusal(for url: URL, reason: String) -> AnthropicError {
+        .networkError(URLError(
+            .appTransportSecurityRequiresSecureConnection,
+            userInfo: [
+                NSLocalizedDescriptionKey: "Refusing to send a request to \(redactedOrigin(of: url)): \(reason).",
+            ]
+        ))
+    }
+
+    /// Scheme, host and port only. Deliberately not `absoluteString`: a `baseURL` may carry
+    /// userinfo (`https://user:secret@host`), and this string ends up in error messages and logs.
+    private static func redactedOrigin(of url: URL) -> String {
+        let scheme = url.scheme ?? "?"
+        let host = url.host ?? "?"
+        guard let port = url.port else { return "\(scheme)://\(host)" }
+        return "\(scheme)://\(host):\(port)"
     }
 
     /// Whether `url`'s host is this machine, and therefore whether plaintext stays on it.
     ///
-    /// Matching is exact, never by substring: `localhost.evil.example` is a name an attacker can
-    /// register, and a `hasSuffix("localhost")` check would exempt it.
+    /// The exemption covers loopback and *only* loopback. A private or link-local address is not
+    /// loopback: `10.0.0.1`, `192.168.1.1`, `fe80::1` and a `.local` mDNS name are all other
+    /// machines on a network, and cleartext to them is cleartext on a wire somebody else can read.
     static func isLoopback(_ url: URL) -> Bool {
-        guard var host = url.host?.lowercased() else { return false }
+        guard let host = url.host else { return false }
+        return isLoopbackHost(host)
+    }
 
-        // `URL.host` keeps the brackets on an IPv6 literal on some platforms and drops them on
-        // others. Normalise so `[::1]` and `::1` are one case.
+    /// The host test, split from ``isLoopback(_:)`` so it can be exercised on host strings that
+    /// `URL.host` will not produce on this platform — notably a bracketed IPv6 literal, which
+    /// Darwin unwraps before we ever see it.
+    ///
+    /// Matching is exact, never by substring: `localhost.evil.example` and `printer.local` are
+    /// names an attacker can register or claim, and a `hasSuffix` check against a shorter tail
+    /// would exempt them. Note that the comparison is on the *decoded* host — `URL.host`
+    /// percent-decodes, so `%6c%6f%63%61%6c%68%6f%73%74` arrives here as `localhost`, which is
+    /// correct: it resolves to loopback too.
+    static func isLoopbackHost(_ rawHost: String) -> Bool {
+        var host = rawHost.lowercased()
+
+        // `URL.host` drops the brackets on an IPv6 literal on Darwin, but the textual form turns up
+        // wherever a host is carried as a string. Normalise so `[::1]` and `::1` are one case.
         if host.hasPrefix("["), host.hasSuffix("]") {
             host = String(host.dropFirst().dropLast())
         }
 
-        // RFC 6761: `localhost` and anything under `.localhost` resolve to loopback.
+        // RFC 6761 reserves `localhost` and everything under `.localhost` for loopback.
+        //
+        // Darwin's resolver honours that. glibc does not resolve `*.localhost` specially, so if
+        // Linux support is ever declared in Package.swift this clause becomes an exemption an
+        // attacker can resolve — revisit it then rather than assuming it travels.
         if host == "localhost" || host.hasSuffix(".localhost") { return true }
 
-        // RFC 4291: `::1` is the only IPv6 loopback address.
+        // RFC 4291: `::1` is the only IPv6 loopback address. Not a prefix test — `::2` and
+        // `::ffff:10.0.0.1` both start `::` and neither is this machine.
         if host == "::1" { return true }
 
         return isIPv4Loopback(host)
@@ -56,12 +95,19 @@ enum BaseURLPolicy {
 
     /// True for a dotted-quad literal in `127.0.0.0/8` — the whole subnet, not just `127.0.0.1`.
     ///
-    /// Every octet has to parse as a number in range, so `127.0.0.256` is not an address and
-    /// `127.0.0.1.evil.example` is not one either.
+    /// Exactly four octets, each one to three ASCII digits in range. The digit check is not
+    /// redundant with the `UInt8` parse: `UInt8("+1")` is `1` and `UInt8("0177")` is `177`, so
+    /// without it `127.+0.0.1` and `127.0177.0.1` would both read as loopback.
     private static func isIPv4Loopback(_ host: String) -> Bool {
         let octets = host.split(separator: ".", omittingEmptySubsequences: false)
         guard octets.count == 4 else { return false }
-        guard octets.allSatisfy({ UInt8($0) != nil }) else { return false }
+        guard octets.allSatisfy({ octet in
+            !octet.isEmpty
+                && octet.count <= 3
+                && octet.allSatisfy(\.isASCII)
+                && octet.allSatisfy(\.isNumber)
+                && UInt8(octet) != nil
+        }) else { return false }
         return octets[0] == "127"
     }
 }
