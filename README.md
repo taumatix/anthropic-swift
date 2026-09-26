@@ -4,13 +4,13 @@ A production-quality Swift SDK for the [Anthropic](https://www.anthropic.com) Cl
 Supports the Messages, Batches, Models, Files and Skills APIs, and the Admin/Organization API
 (Workspaces, API Keys, Members, Invites).
 
-> **Wire contracts:** API version `2023-06-01` — current, checked 2026-09-21.
+> **Wire contracts:** API version `2023-06-01` — current, checked 2026-09-26.
 >
 > - **Skills is on GA as of 2026-09-22** and sends no beta header. It previously decoded a `name`
 >   field the API has never returned, so every `client.skills` call failed; if you are on `0.2.0`
 >   or earlier, Skills does not work at all. `Skill.name` still compiles, deprecated, and now
 >   returns `displayName`.
-> - **Files still sends `files-api-2025-04-14`**, checked 2026-09-21. The header is optional now and
+> - **Files still sends `files-api-2025-04-14`**, checked 2026-09-26. The header is optional now and
 >   sending it keeps the old response shapes, so the cost is missing surface: no `expires_at` on a
 >   file, no `expires_in_seconds` at upload, and the superseded `before_id`/`after_id` cursor
 >   instead of `page`/`next_page`. Migrating it is the next roadmap entry of its kind.
@@ -31,7 +31,7 @@ Supports the Messages, Batches, Models, Files and Skills APIs, and the Admin/Org
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/taumatix/anthropic-swift", from: "0.2.0"),
+    .package(url: "https://github.com/taumatix/anthropic-swift", from: "0.3.0"),
 ],
 targets: [
     .target(name: "MyApp", dependencies: [
