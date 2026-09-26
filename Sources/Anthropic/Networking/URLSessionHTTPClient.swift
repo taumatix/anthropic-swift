@@ -2,8 +2,15 @@ import Foundation
 
 /// Production `HTTPClient` implementation backed by `URLSession`.
 ///
-/// Uses `URLSession.data(for:)` for non-streaming requests and
-/// `URLSession.bytes(for:)` for streaming (SSE) requests.
+/// Uses `URLSession.data(for:delegate:)` for non-streaming requests and
+/// `URLSession.bytes(for:delegate:)` for streaming (SSE) requests.
+///
+/// Both pass ``RedirectCredentialGuard`` as a *task* delegate, which is what lets the guard work
+/// on `URLSession.shared` — a session-level delegate can only be set at session construction, and
+/// `.shared` does not accept one. A caller who injects their own `URLSession` keeps its
+/// configuration and its session delegate; note that a session delegate of theirs implementing
+/// `willPerformHTTPRedirection` will not be consulted for these tasks, because a task delegate
+/// takes precedence.
 ///
 /// The `baseURL` is required so this client can properly implement the
 /// `HTTPClient` protocol by building `URLRequest` values itself, without
