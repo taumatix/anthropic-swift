@@ -9,6 +9,16 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- `Model.claudeMythos51` (`claude-mythos-5-1`), released 2026-09-01. It is the same model as
+  `.claudeFable51` and is invite only, through Project Glasswing.
+
+### Fixed
+
+- `Model.claude3Haiku` warned "retires 2026-04-19". The model was retired on 2026-04-20 and the API
+  now returns 404 for it, so the warning now says so, like the other retired constants.
+
 ## [0.3.0] — 2026-09-26
 
 ### Security

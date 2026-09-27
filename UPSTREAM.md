@@ -9,7 +9,7 @@ API you are calling.
 - name: anthropic-api-version
   kind: literal
   value: "2023-06-01"
-  checked: 2026-09-26
+  checked: 2026-09-27
   note: >-
     sent as the anthropic-version header on every request;
     ClientConfiguration.defaultAnthropicVersion. Still the newest version in the
@@ -18,7 +18,7 @@ API you are calling.
 - name: files-api-beta
   kind: literal
   value: "files-api-2025-04-14"
-  checked: 2026-09-26
+  checked: 2026-09-27
   note: >-
     anthropic-beta header sent by FilesService. STALE: the Files API left beta. The
     header is now optional and requests that send it keep the beta response shapes,
@@ -29,7 +29,7 @@ API you are calling.
 - name: skills-api-beta
   kind: literal
   value: "skills-2025-10-02"
-  checked: 2026-09-26
+  checked: 2026-09-27
   hold: >-
     RETIRED FROM USE, not stale. SkillsService no longer sends this header — it is
     still a live beta value, but the beta endpoint returns the same object and the
@@ -43,7 +43,7 @@ API you are calling.
   kind: github-release
   repo: anthropics/anthropic-sdk-python
   tag: v1.8.0
-  checked: 2026-09-26
+  checked: 2026-09-27
   note: >-
     not ported from, but read as the reference for new API surface — what it gains,
     this lacks. v1.8.0 (2026-09-22) added claude-opus-5-5, inline tool definitions
@@ -52,7 +52,7 @@ API you are calling.
 - name: model-ids
   kind: literal
   value: "fable-5-1, opus-5-5, sonnet-5, haiku-4-5"
-  checked: 2026-09-26
+  checked: 2026-09-27
   note: >-
     the four current models per the docs' comparison table; Model.swift carries
     these plus every legacy ID. A model released later still works — Model takes an
@@ -133,9 +133,11 @@ calling them "the most capable widely released model" and "the current Opus"; bo
 page's *legacy* line. Autocomplete was steering callers to superseded models and the prose was
 agreeing with it. Both constants are added and both doc comments corrected; nothing was removed.
 
-`claude-mythos-5-1` is **not** added. The pricing footnote on that page names "Claude Mythos 5.1",
-but no row gives its API ID, and a model constant guessed from a product name is a 404 at runtime.
-It stays unlisted until an ID is published; `Model(rawValue:)` reaches it meanwhile.
+`claude-mythos-5-1` was **not** added on 2026-09-24. The pricing footnote on that page named
+"Claude Mythos 5.1", but no row gave its API ID, and a model constant guessed from a product name
+is a 404 at runtime. The ID has since been published on the model's own page, which is not linked
+from the comparison table because the model is invite only. `.claudeMythos51` was added on
+2026-09-27 from that page.
 
 `ModelTests` now splits current from legacy and cites the page and the date it was read, so the
 next stale-list finding is one failing assertion rather than an act of noticing.
@@ -204,3 +206,24 @@ drifted** — every pin is re-dated, not moved:
 - <https://platform.claude.com/docs/en/about-claude/models/overview> — the same four current models
   this SDK already knows. `claude-mythos-5-1` still appears only in the pricing footnote with no
   API ID, so it still stays unlisted.
+
+Pages read on 2026-09-27, a maintenance pass. Two pins moved, and both were models:
+
+- <https://platform.claude.com/docs/en/api/versioning>: `2023-06-01` is still the newest, and the
+  history still has two entries.
+- <https://platform.claude.com/docs/en/build-with-claude/files>: still GA, the header is still
+  optional, and the migration table still matches the one above.
+- <https://platform.claude.com/docs/en/api/beta/skills/list>: `skills-2025-10-02` is still in the
+  48-value `anthropic-beta` enum, and `BetaSkill` still matches the GA `Skill` field for field,
+  with the same four source kinds.
+- <https://platform.claude.com/docs/en/about-claude/models/overview>: the same four current models.
+- <https://platform.claude.com/docs/en/models/mythos-5-1/overview>: **moved.** The page gives
+  `claude-mythos-5-1` as the API ID, "Invite only. Released September 1, 2026", the same model as
+  Fable 5.1 offered through Project Glasswing. Added as `.claudeMythos51`.
+- <https://platform.claude.com/docs/en/about-claude/model-deprecations>: **moved.**
+  `claude-3-haiku-20240307` shows as Retired on 2026-04-20, but `.claude3Haiku` still warned
+  "retires 2026-04-19". The warning now says the model is retired and the API returns 404.
+  `claude-haiku-4-5-20251001` is Active, "not sooner than October 15, 2026". That date is a
+  minimum-lifetime commitment and no deprecation has been announced. Anthropic gives at least 60
+  days' notice, so the next pass should re-read this row.
+- `anthropics/anthropic-sdk-python`: v1.8.0 is still the latest release.
