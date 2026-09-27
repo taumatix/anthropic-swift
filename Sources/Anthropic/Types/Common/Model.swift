@@ -41,6 +41,10 @@ public struct Model: RawRepresentable, Sendable, Hashable, Codable, ExpressibleB
     /// coding and knowledge work. 1M context, 128K max output.
     public static let claudeOpus55 = Model(rawValue: "claude-opus-5-5")
 
+    /// Claude Mythos 5.1 — the same model as ``claudeFable51``, invite only through Project
+    /// Glasswing. Use ``claudeFable51`` unless your organization takes part.
+    public static let claudeMythos51 = Model(rawValue: "claude-mythos-5-1")
+
     /// Claude Fable 5 — superseded by ``claudeFable51``; still available.
     public static let claudeFable5 = Model(rawValue: "claude-fable-5")
 
@@ -122,6 +126,6 @@ public struct Model: RawRepresentable, Sendable, Hashable, Codable, ExpressibleB
     @available(*, deprecated, message: "Retired 2025-07-21; the API returns 404. Use .claudeSonnet5.")
     public static let claude3Sonnet = Model(rawValue: "claude-3-sonnet-20240229")
 
-    @available(*, deprecated, message: "Deprecated; retires 2026-04-19. Use .claudeHaiku45.")
+    @available(*, deprecated, message: "Retired 2026-04-20; the API returns 404. Use .claudeHaiku45.")
     public static let claude3Haiku = Model(rawValue: "claude-3-haiku-20240307")
 }

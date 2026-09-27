@@ -171,7 +171,8 @@ MessageRequest(model: "claude-some-future-model", ...)    // string literal, no 
 | `.claudeSonnet46` / `.claudeSonnet45` | `claude-sonnet-4-6` / `-4-5` |
 | `.claudeHaiku45` | `claude-haiku-4-5` |
 
-`.claudeMythos5` is also defined, but only Project Glasswing participants can reach it.
+`.claudeMythos51` and `.claudeMythos5` are also defined, but only Project Glasswing participants
+can reach them.
 
 The Claude 3.x constants (`.claude35Sonnet`, `.claude3Opus`, …) are deprecated: those models are
 retired and the API returns 404 for them. They still compile so existing code isn't broken, but

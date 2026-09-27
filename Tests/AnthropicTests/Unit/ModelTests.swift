@@ -16,6 +16,12 @@ final class ModelTests: XCTestCase {
         XCTAssertEqual(Model.claudeHaiku45.rawValue, "claude-haiku-4-5")
     }
 
+    // Invite only, so absent from the overview table. The ID is from
+    // https://platform.claude.com/docs/en/models/mythos-5-1/overview, read 2026-09-27.
+    func testInviteOnlyModelRawValues() {
+        XCTAssertEqual(Model.claudeMythos51.rawValue, "claude-mythos-5-1")
+    }
+
     func testLegacyModelRawValues() {
         XCTAssertEqual(Model.claudeFable5.rawValue, "claude-fable-5")
         XCTAssertEqual(Model.claudeMythos5.rawValue, "claude-mythos-5")
