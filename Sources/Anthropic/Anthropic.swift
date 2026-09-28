@@ -10,7 +10,7 @@ import Foundation
 /// ```
 public enum Anthropic {
     /// The current SDK version.
-    public static let version = "0.3.0"
+    public static let version = "0.4.0"
 
     // MARK: - Type Aliases
     public typealias Client = AnthropicClient
