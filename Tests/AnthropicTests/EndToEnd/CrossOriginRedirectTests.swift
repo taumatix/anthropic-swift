@@ -137,6 +137,44 @@ final class CrossOriginRedirectTests: XCTestCase {
         }
     }
 
+    /// The same forgery, with the redirect guard out of the picture: a caller-injected
+    /// `HTTPClient` that follows every redirect, as `URLSession` does by default. Only the
+    /// pipeline's response-origin check stands between the foreign body and the caller.
+    ///
+    /// The unguarded client is asserted to have *reached* the foreign origin, so a pass cannot
+    /// come from the redirect simply not being followed.
+    func testAForgedResponseIsRefusedEvenWithoutTheRedirectGuard() async throws {
+        let elsewhere = try LoopbackHTTPServer { _ in .json(200, Self.forgedMessage) }
+        self.elsewhere = elsewhere
+        let elsewhereURL = try await elsewhere.start()
+
+        let origin = try LoopbackHTTPServer { _ in
+            .redirect(302, to: elsewhereURL.appendingPathComponent("v1/messages"))
+        }
+        self.origin = origin
+        let originURL = try await origin.start()
+
+        let client = AnthropicClient(configuration: ClientConfiguration(
+            apiKey: "test-key",
+            baseURL: originURL,
+            maxRetries: 0,
+            httpClient: UnguardedHTTPClient(baseURL: originURL)
+        ))
+
+        do {
+            let response = try await client.messages.create(
+                MessageRequest(model: .claudeSonnet5, messages: [.user("hi")], maxTokens: 16)
+            )
+            XCTFail("a forged response was returned to the caller as the API's answer: \(response.id)")
+        } catch AnthropicError.networkError(let error) {
+            XCTAssertEqual(error.code, .badServerResponse)
+            XCTAssertEqual(error.failingURL?.port, elsewhereURL.port)
+        }
+
+        XCTAssertEqual(elsewhere.receivedRequests.count, 1,
+                       "the unguarded client never followed the redirect, so this proves nothing")
+    }
+
     /// Proves the forgery fixture would actually decode if it were delivered — otherwise the test
     /// above could pass because the body was unusable rather than because it never arrived.
     func testTheForgedFixtureWouldOtherwiseDecode() async throws {
@@ -208,6 +246,26 @@ final class CrossOriginRedirectTests: XCTestCase {
     }
 
     // MARK: - Setup
+
+    /// A caller's own transport: plain `URLSession`, which follows redirects, reporting the URL
+    /// the response actually came from. This is the shape the redirect guard cannot reach.
+    private struct UnguardedHTTPClient: HTTPClient {
+        let baseURL: URL
+
+        func send(_ request: HTTPRequest) async throws -> HTTPResponse {
+            var urlRequest = URLRequest(url: baseURL.appendingPathComponent(request.path))
+            urlRequest.httpMethod = request.method
+            urlRequest.httpBody = request.body
+            request.headers.forEach { urlRequest.setValue($1, forHTTPHeaderField: $0) }
+            let (data, response) = try await URLSession.shared.data(for: urlRequest)
+            let http = try XCTUnwrap(response as? HTTPURLResponse)
+            return HTTPResponse(statusCode: http.statusCode, body: data, url: http.url)
+        }
+
+        func stream(_ request: HTTPRequest) -> AsyncThrowingStream<Data, Error> {
+            AsyncThrowingStream { $0.finish() }
+        }
+    }
 
     private static let forgedMessage = Data("""
     {"id":"msg_forged","type":"message","role":"assistant","model":"claude-sonnet-5",
