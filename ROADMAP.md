@@ -3,29 +3,40 @@
 Ordered by how much each entry limits real deployments, not by how interesting it is to build.
 Each entry says what breaks today, so it can be judged on its own.
 
-## Nothing checks where a *response* came from
+## A custom `HTTPClient`'s stream is not origin-checked
 
-**Today:** the redirect guard refuses a hop that leaves the caller's origin, which closes the way
-an attacker could get a response decoded as Anthropic's. But that is a guard on the *request* path
-standing in for a property of the *response* path, and the SDK still has no notion of "this body
-arrived from the origin I asked". `RequestPipeline` hands `HTTPResponse` to a decoder without ever
-comparing `HTTPURLResponse.url` to `baseURL`.
+**Today:** since 0.5.0 every unary response is refused unless it came from `baseURL`'s origin, and
+the SDK's own `URLSessionHTTPClient` checks its streams too. But `HTTPClient.stream(_:)` returns
+`AsyncThrowingStream<Data, Error>`, bytes with no response attached, so for a caller's own client
+the pipeline has nothing to compare. A caller transport that follows a redirect on a streaming
+request still delivers foreign SSE events as `MessageStreamEvent`s, which is the forgery 0.5.0
+closed for unary calls.
 
-It matters because the redirect guard is one mechanism and it can be bypassed by anything that
-does not go through `willPerformHTTPRedirection`: a caller-injected `HTTPClient` (the protocol is
-public and `MockHTTPClient` ships), a `URLProtocol` subclass registered by the app, or a future
-transport. The 2026-09-26 review demonstrated the consequence concretely — a foreign body decoded
-into a `MessageResponse` with `id=msg_forged` and text the caller would have acted on.
+**Why it is not simply done:** the fix is a new protocol requirement, for instance a
+`streamResponse(_:)` returning the response head alongside the bytes. Adding a requirement breaks
+every conforming type unless it has a default implementation, and a default that calls `stream(_:)`
+has no URL either. So the default must degrade to "unchecked", exactly as a `nil`
+`HTTPResponse.url` does, and the pipeline must prefer the new method when it is implemented.
 
-**Why it is not simply done:** `HTTPResponse` carries no URL today, so adding the check means
-widening an existing public struct (additively) and deciding what a mismatch *is* — a new error
-case breaks exhaustive `switch`es, so it has to reuse `httpError` or wait for a major. It also has
-to not fire on the legitimate same-origin redirect, which means comparing origins rather than URLs.
+**Shape:** an additive requirement with a default in a protocol extension,
+`URLSessionHTTPClient` implementing it, and `RequestPipeline.stream` checking the head before
+yielding. The end-to-end test is the unary one in `CrossOriginRedirectTests` with a streaming
+request through an unguarded client.
 
-**Shape:** add `HTTPResponse.url` (optional, defaulted, so the memberwise init stays source
-compatible), populate it in `URLSessionHTTPClient`, and have `RequestPipeline` refuse a body whose
-origin is not the configured one. The end-to-end test is the forgery test that already exists,
-with the redirect guard disabled so the response path is what is under test.
+## A response with no `url` skips the origin check
+
+**Today:** `HTTPResponse.url` is optional so that clients written before 0.5.0 keep compiling
+and working. The price is that a custom `HTTPClient` which never sets it gets no origin check at
+all. `MockHTTPClient` does not set it either, so a caller testing against it cannot tell whether
+their production client would pass the check.
+
+**Why it is not simply done:** refusing `nil` breaks every existing custom client at runtime, which
+is a break in behaviour, not only in source. It belongs in a major, with a deprecation first.
+
+**Shape:** the SDK has no logger, so the warning has to come from the compiler. In a minor, add
+`HTTPResponse.init(statusCode:headers:body:url:)` with `url` non-optional, and deprecate the
+initializer that omits it, with a message saying why. Also let `MockHTTPClient` take a response
+URL. At 1.0, treat `nil` as a refusal, and record that in `MIGRATION.md` when the major is cut.
 
 ## The transport policy is enforced per request, not per configuration
 
