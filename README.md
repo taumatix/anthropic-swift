@@ -31,7 +31,7 @@ Supports the Messages, Batches, Models, Files and Skills APIs, and the Admin/Org
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/taumatix/anthropic-swift", from: "0.4.0"),
+    .package(url: "https://github.com/taumatix/anthropic-swift", from: "0.5.0"),
 ],
 targets: [
     .target(name: "MyApp", dependencies: [
@@ -392,6 +392,16 @@ rather than documented:
   protects the key and hands over everything else: `307` and `308` preserve the method and body, so
   the foreign host would still receive your prompt, your system prompt and any file you were
   uploading — and its reply would be decoded and returned to you as though Anthropic had sent it.
+- **A response from another origin is not decoded.** Whatever path a response took — a redirect,
+  a `URLProtocol` your app registered, your own `HTTPClient` — if it came from a scheme, host or
+  port other than `baseURL`'s, you get `AnthropicError.networkError` with
+  `URLError.badServerResponse` naming where it came from, and its body is discarded. Its status
+  is not believed either: a foreign `401` is not reported as an authentication failure.
+
+  **If you supply your own `HTTPClient`, set `HTTPResponse.url`** to the URL the response came
+  from (`HTTPURLResponse.url`). A response with no `url` skips this check, so that clients written
+  before the property existed keep working. Streaming through a custom `HTTPClient` is not checked
+  yet, because `stream(_:)` returns bytes only; the SDK's own client checks both.
 
 If you route through a gateway that redirects to a different host, point `baseURL` at the host that
 actually answers.

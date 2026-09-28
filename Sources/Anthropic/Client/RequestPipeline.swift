@@ -7,8 +7,9 @@ import Foundation
 /// 2. Injecting `content-type` and `accept` headers
 /// 3. Merging client-level `additionalHeaders`
 /// 4. Executing the request through the `HTTPClient` protocol
-/// 5. Applying retry logic for retryable status codes
-/// 6. Throwing `AnthropicError` for non-2xx responses
+/// 5. Refusing a response from an origin other than `baseURL`'s (see ``HTTPResponse/url``)
+/// 6. Applying retry logic for retryable status codes
+/// 7. Throwing `AnthropicError` for non-2xx responses
 public final class RequestPipeline: Sendable {
     private let configuration: ClientConfiguration
 
@@ -34,6 +35,12 @@ public final class RequestPipeline: Sendable {
         while true {
             let prepared = prepare(request, isAdmin: isAdminPath(request.path))
             let response = try await configuration.httpClient.send(prepared)
+
+            // Before anything reads the body, including error mapping and retry: a foreign
+            // origin's 401 or 429 must not be believed any more than its 200.
+            if let refusal = ResponseOrigin.refusal(for: response.url, baseURL: configuration.baseURL) {
+                throw refusal
+            }
 
             if response.isSuccess { return response }
 

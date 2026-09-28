@@ -98,6 +98,12 @@ public final class URLSessionHTTPClient: HTTPClient, @unchecked Sendable {
                         for: urlRequest,
                         delegate: CrossOriginRedirectGuard.shared
                     )
+                    // A stream hands the pipeline no response object, so its origin is checked
+                    // here, before a byte of it is read.
+                    if let refusal = ResponseOrigin.refusal(for: urlResponse.url, baseURL: self.baseURL) {
+                        continuation.finish(throwing: refusal)
+                        return
+                    }
                     // Validate status before streaming
                     if let httpResponse = urlResponse as? HTTPURLResponse,
                        !(200..<300).contains(httpResponse.statusCode) {
@@ -146,6 +152,6 @@ public final class URLSessionHTTPClient: HTTPClient, @unchecked Sendable {
             throw AnthropicError.httpError(statusCode: 0, body: data)
         }
         let headers = (httpResponse.allHeaderFields as? [String: String]) ?? [:]
-        return HTTPResponse(statusCode: httpResponse.statusCode, headers: headers, body: data)
+        return HTTPResponse(statusCode: httpResponse.statusCode, headers: headers, body: data, url: httpResponse.url)
     }
 }

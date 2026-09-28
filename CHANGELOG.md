@@ -9,6 +9,33 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-09-28
+
+### Security
+
+- **A response is refused unless it came from `baseURL`'s origin.** Until now, the only defence
+  against a foreign host's reply being decoded as the API's was the redirect guard in the SDK's own
+  transport. A caller-supplied `HTTPClient` that follows redirects, or a `URLProtocol` the app
+  registered, bypassed it: a forged `MessageResponse` from another origin decoded and was returned.
+  `RequestPipeline` now compares every unary response's origin (scheme, host, port) with
+  `baseURL`'s before it reads the body. That covers error bodies too, so a foreign `401` or `429`
+  is not believed and does not trigger a retry. `URLSessionHTTPClient` applies the same check to
+  streams before yielding a byte. A mismatch throws `AnthropicError.networkError` with
+  `URLError.badServerResponse`, and the foreign body is discarded.
+
+### Added
+
+- `HTTPResponse.url`, the URL a response actually came from. It is optional and defaults to `nil`,
+  so existing `HTTPResponse(statusCode:headers:body:)` calls compile unchanged.
+  `URLSessionHTTPClient` sets it. **A custom `HTTPClient` should set it too**, because a `nil`
+  `url` skips the origin check.
+
+### Known limitation
+
+- Streaming through a custom `HTTPClient` is not origin-checked. `HTTPClient.stream(_:)` returns
+  bytes with no response, so the pipeline has nothing to compare. The SDK's own client is checked.
+  This is tracked in `ROADMAP.md`.
+
 ## [0.4.0] — 2026-09-28
 
 ### Added
@@ -258,7 +285,8 @@ they are documented as pinned rather than updated.
 - `README.md` — full feature documentation and usage examples
 - `Docs/ADR/` — eight Architectural Decision Records (0001–0008)
 
-[Unreleased]: https://github.com/taumatix/anthropic-swift/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/taumatix/anthropic-swift/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/taumatix/anthropic-swift/releases/tag/v0.5.0
 [0.4.0]: https://github.com/taumatix/anthropic-swift/releases/tag/v0.4.0
 [0.3.0]: https://github.com/taumatix/anthropic-swift/releases/tag/v0.3.0
 [0.2.0]: https://github.com/taumatix/anthropic-swift/releases/tag/v0.2.0
