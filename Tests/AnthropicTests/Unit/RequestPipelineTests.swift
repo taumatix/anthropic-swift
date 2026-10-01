@@ -25,7 +25,7 @@ final class RequestPipelineTests: XCTestCase {
         var thrownError: Error?
         do {
             for try await _ in client.messages.stream(
-                MessageRequest(model: .claude4Sonnet, messages: [.user("Hi")], maxTokens: 10)
+                MessageRequest(model: .claudeSonnet55, messages: [.user("Hi")], maxTokens: 10)
             ) { }
         } catch {
             thrownError = error
@@ -53,7 +53,7 @@ final class RequestPipelineTests: XCTestCase {
         let client = AnthropicClient(configuration: config)
 
         let response = try await client.messages.create(
-            MessageRequest(model: .claude4Sonnet, messages: [.user("Hi")], maxTokens: 10)
+            MessageRequest(model: .claudeSonnet55, messages: [.user("Hi")], maxTokens: 10)
         )
         XCTAssertFalse(response.id.isEmpty)
         XCTAssertEqual(mock.recordedRequests.count, 1)
@@ -80,7 +80,7 @@ final class RequestPipelineTests: XCTestCase {
         let client = AnthropicClient(configuration: config)
 
         let response = try await client.messages.create(
-            MessageRequest(model: .claude4Sonnet, messages: [.user("Hi")], maxTokens: 10)
+            MessageRequest(model: .claudeSonnet55, messages: [.user("Hi")], maxTokens: 10)
         )
         XCTAssertFalse(response.id.isEmpty)
         XCTAssertEqual(callCount, 2, "Pipeline should have retried once (2 total calls)")

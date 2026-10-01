@@ -14,7 +14,7 @@ final class StreamingServiceTests: XCTestCase {
     }
 
     func makeRequest() -> MessageRequest {
-        MessageRequest(model: .claude4Sonnet, messages: [.user("Tell me a story.")], maxTokens: 512)
+        MessageRequest(model: .claudeSonnet55, messages: [.user("Tell me a story.")], maxTokens: 512)
     }
 
     // MARK: - textStream

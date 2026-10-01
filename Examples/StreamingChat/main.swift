@@ -19,7 +19,7 @@ struct StreamingChat {
         let client = AnthropicClient(apiKey: apiKey)
 
         let request = MessageRequest(
-            model: .claude4Sonnet,
+            model: .claudeSonnet55,
             messages: [.user("Write a haiku about programming in Swift.")],
             maxTokens: 256
         )

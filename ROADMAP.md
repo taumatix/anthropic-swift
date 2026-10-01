@@ -222,6 +222,11 @@ pinning**, both beta. The `anthropic-beta` enum read on 2026-09-24 carries `inli
 and `mcp-client-2026-09-15`, which is where a reader can check what they are before anyone builds
 them here.
 
+Two more from v1.9.0 (2026-09-28), both on the Messages API this SDK covers: the
+**`between_tools` thinking type**, and **cache diagnostics**, which are now GA and appear on
+`Message` and `MessageCreateParams`. Both were read from the release notes on 2026-10-01 and not
+yet from the API reference, so check their shape there before building either.
+
 **Shape:** diff this SDK's service methods against the official SDK's, record the result as
 entries here, and keep the comparison as a checked-in inventory rather than a one-off reading —
 the same shape as the drift problem it exists to catch.

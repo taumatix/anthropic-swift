@@ -67,13 +67,18 @@ public struct Model: RawRepresentable, Sendable, Hashable, Codable, ExpressibleB
     /// Claude Opus 4.5.
     public static let claudeOpus45 = Model(rawValue: "claude-opus-4-5")
 
-    /// Claude Sonnet 5 — the best balance of speed and intelligence in the Sonnet tier.
+    /// Claude Sonnet 5.5 — the best combination of speed and intelligence. 1M context, 128K max
+    /// output.
+    public static let claudeSonnet55 = Model(rawValue: "claude-sonnet-5-5")
+
+    /// Claude Sonnet 5 — superseded by ``claudeSonnet55``; still available.
     public static let claudeSonnet5 = Model(rawValue: "claude-sonnet-5")
 
-    /// Claude Sonnet 4.6 — the previous Sonnet generation.
+    /// Claude Sonnet 4.6.
     public static let claudeSonnet46 = Model(rawValue: "claude-sonnet-4-6")
 
-    /// Claude Sonnet 4.5.
+    /// Claude Sonnet 4.5 — deprecated on 2026-09-30; the API stops serving it on 2026-11-30.
+    @available(*, deprecated, message: "Deprecated 2026-09-30; retires 2026-11-30. Use .claudeSonnet55.")
     public static let claudeSonnet45 = Model(rawValue: "claude-sonnet-4-5")
 
     /// Claude Haiku 4.5 — the fastest and most cost-effective model.
@@ -87,12 +92,15 @@ public struct Model: RawRepresentable, Sendable, Hashable, Codable, ExpressibleB
 
     /// The Opus model of the Claude 4 generation, pinned to Opus 4.5.
     ///
-    /// Equivalent to ``claudeOpus45``. Prefer ``claudeOpus5`` for new code.
+    /// Equivalent to ``claudeOpus45``. Prefer ``claudeOpus55`` for new code.
     public static let claude4Opus = Model(rawValue: "claude-opus-4-5")
 
     /// The Sonnet model of the Claude 4 generation, pinned to Sonnet 4.5.
     ///
-    /// Equivalent to ``claudeSonnet45``. Prefer ``claudeSonnet5`` for new code.
+    /// Equivalent to ``claudeSonnet45``, which was deprecated on 2026-09-30 and retires on
+    /// 2026-11-30. It is not repointed, because that would silently change the model existing code
+    /// runs against. Move to ``claudeSonnet55``.
+    @available(*, deprecated, message: "Sonnet 4.5: deprecated 2026-09-30; retires 2026-11-30. Use .claudeSonnet55.")
     public static let claude4Sonnet = Model(rawValue: "claude-sonnet-4-5")
 
     /// The Haiku model of the Claude 4 generation, pinned to the dated Haiku 4.5 snapshot.

@@ -4,7 +4,7 @@ import Foundation
 ///
 /// ```swift
 /// let request = MessageRequest(
-///     model: .claude4Sonnet,
+///     model: .claudeSonnet55,
 ///     messages: [.user("Hello!")],
 ///     maxTokens: 1024
 /// )
