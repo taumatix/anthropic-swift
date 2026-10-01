@@ -31,7 +31,7 @@ struct ToolUseExample {
 
         // Initial request with tool definition
         let initialRequest = MessageRequest(
-            model: .claude4Sonnet,
+            model: .claudeSonnet55,
             messages: [.user("What's the weather like in San Francisco?")],
             maxTokens: 1024,
             tools: [weatherTool]
@@ -54,7 +54,7 @@ struct ToolUseExample {
 
         // Continue the conversation with the tool result
         let followUpRequest = MessageRequest(
-            model: .claude4Sonnet,
+            model: .claudeSonnet55,
             messages: [
                 .user("What's the weather like in San Francisco?"),
                 .assistant(initialResponse.content.map { block -> ContentBlockParam in

@@ -9,6 +9,24 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- `Model.claudeSonnet55` (`claude-sonnet-5-5`), now the current Sonnet in Anthropic's model table.
+  `.claudeSonnet5` stays; it is on the legacy line.
+
+### Deprecated
+
+- `Model.claudeSonnet45` and `Model.claude4Sonnet`. Both send `claude-sonnet-4-5`, which
+  Anthropic deprecated on 2026-09-30 and retires on 2026-11-30, with Sonnet 5.5 as the
+  replacement. They keep their value and work until then, and now warn with the date.
+
+### Changed
+
+- The README, the doc-comment examples, the `Examples/` programs and the test suite used
+  `.claude4Sonnet`, so copying the
+  getting-started code gave you a model that stops working on 2026-11-30. They use
+  `.claudeSonnet55` now.
+
 ## [0.5.0] — 2026-09-28
 
 ### Security

@@ -8,7 +8,7 @@ import Foundation
 ///
 /// // Send a message
 /// let response = try await client.messages.create(
-///     MessageRequest(model: .claude4Sonnet, messages: [.user("Hello!")], maxTokens: 1024)
+///     MessageRequest(model: .claudeSonnet55, messages: [.user("Hello!")], maxTokens: 1024)
 /// )
 /// print(response.textContent)
 ///

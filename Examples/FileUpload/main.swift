@@ -44,7 +44,7 @@ struct FileUploadExample {
         print("\nAsking Claude to summarize the report...")
         let response = try await client.messages.create(
             MessageRequest(
-                model: .claude4Sonnet,
+                model: .claudeSonnet55,
                 messages: [
                     .user([
                         .document(.file(id: fileObject.id)),

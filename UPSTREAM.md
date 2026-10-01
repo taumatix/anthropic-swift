@@ -42,17 +42,24 @@ API you are calling.
 - name: anthropic-sdk-python
   kind: github-release
   repo: anthropics/anthropic-sdk-python
-  tag: v1.8.0
-  checked: 2026-09-27
+  tag: v1.11.0
+  checked: 2026-10-01
   note: >-
     not ported from, but read as the reference for new API surface — what it gains,
     this lacks. v1.8.0 (2026-09-22) added claude-opus-5-5, inline tool definitions
-    and MCP tool-list pinning; only the model ID landed here.
+    and MCP tool-list pinning; only the model ID landed here. Read 2026-10-01 up to
+    v1.11.0 (2026-09-30): claude-sonnet-5-5 and the Sonnet 4.5 deprecation landed
+    here. Its v1.10.0 auto-paging fix (continue past an empty page while
+    next_page is set) was already true here: Page.AsyncIterator loops until a page
+    has an item or no cursor is left. Not here yet, and on ROADMAP.md's
+    surface-gaps entry: the between_tools thinking type, and cache diagnostics (now
+    GA) on Message and MessageCreateParams. The Admin, Managed Agents and
+    MCP-tunnel additions are out of this SDK's scope.
 
 - name: model-ids
   kind: literal
-  value: "fable-5-1, opus-5-5, sonnet-5, haiku-4-5"
-  checked: 2026-09-27
+  value: "fable-5-1, opus-5-5, sonnet-5-5, haiku-4-5"
+  checked: 2026-10-01
   note: >-
     the four current models per the docs' comparison table; Model.swift carries
     these plus every legacy ID. A model released later still works — Model takes an

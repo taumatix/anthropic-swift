@@ -21,7 +21,7 @@ struct BasicChat {
 
         let response = try await client.messages.create(
             MessageRequest(
-                model: .claude4Sonnet,
+                model: .claudeSonnet55,
                 messages: [.user("What is 2 + 2? Answer in one sentence.")],
                 maxTokens: 256
             )

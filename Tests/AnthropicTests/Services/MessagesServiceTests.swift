@@ -18,7 +18,7 @@ final class MessagesServiceTests: XCTestCase {
     func testCreateMessageSendsCorrectMethod() async throws {
         mock.handler = { _ in HTTPResponse(statusCode: 200, body: MockResponses.singleMessage) }
         _ = try await client.messages.create(
-            MessageRequest(model: .claude4Sonnet, messages: [.user("Hello")], maxTokens: 100)
+            MessageRequest(model: .claudeSonnet55, messages: [.user("Hello")], maxTokens: 100)
         )
         XCTAssertEqual(mock.recordedRequests.first?.method, "POST")
     }
@@ -26,7 +26,7 @@ final class MessagesServiceTests: XCTestCase {
     func testCreateMessageSendsCorrectPath() async throws {
         mock.handler = { _ in HTTPResponse(statusCode: 200, body: MockResponses.singleMessage) }
         _ = try await client.messages.create(
-            MessageRequest(model: .claude4Sonnet, messages: [.user("Hello")], maxTokens: 100)
+            MessageRequest(model: .claudeSonnet55, messages: [.user("Hello")], maxTokens: 100)
         )
         XCTAssertEqual(mock.recordedRequests.first?.path, "/v1/messages")
     }
@@ -37,7 +37,7 @@ final class MessagesServiceTests: XCTestCase {
             return HTTPResponse(statusCode: 200, body: MockResponses.singleMessage)
         }
         _ = try await client.messages.create(
-            MessageRequest(model: .claude4Sonnet, messages: [.user("Hi")], maxTokens: 100)
+            MessageRequest(model: .claudeSonnet55, messages: [.user("Hi")], maxTokens: 100)
         )
     }
 
@@ -47,14 +47,14 @@ final class MessagesServiceTests: XCTestCase {
             return HTTPResponse(statusCode: 200, body: MockResponses.singleMessage)
         }
         _ = try await client.messages.create(
-            MessageRequest(model: .claude4Sonnet, messages: [.user("Hi")], maxTokens: 100)
+            MessageRequest(model: .claudeSonnet55, messages: [.user("Hi")], maxTokens: 100)
         )
     }
 
     func testCreateMessageDecodesResponse() async throws {
         mock.handler = { _ in HTTPResponse(statusCode: 200, body: MockResponses.singleMessage) }
         let response = try await client.messages.create(
-            MessageRequest(model: .claude4Sonnet, messages: [.user("Hi")], maxTokens: 100)
+            MessageRequest(model: .claudeSonnet55, messages: [.user("Hi")], maxTokens: 100)
         )
         XCTAssertEqual(response.id, "msg_01XFDUDYJgAACzvnptvVoYEL")
         XCTAssertEqual(response.textContent, "Hello! How can I help you today?")
@@ -72,7 +72,7 @@ final class MessagesServiceTests: XCTestCase {
             return HTTPResponse(statusCode: 200, body: MockResponses.singleMessage)
         }
         _ = try await client.messages.create(
-            MessageRequest(model: .claude4Sonnet, messages: [.user("Hi")], maxTokens: 100)
+            MessageRequest(model: .claudeSonnet55, messages: [.user("Hi")], maxTokens: 100)
         )
     }
 
@@ -82,7 +82,7 @@ final class MessagesServiceTests: XCTestCase {
         mock.handler = { _ in HTTPResponse(statusCode: 401, body: MockResponses.authError) }
         do {
             _ = try await client.messages.create(
-                MessageRequest(model: .claude4Sonnet, messages: [.user("Hi")], maxTokens: 100)
+                MessageRequest(model: .claudeSonnet55, messages: [.user("Hi")], maxTokens: 100)
             )
             XCTFail("Should have thrown")
         } catch AnthropicError.authenticationFailed {
@@ -105,7 +105,7 @@ final class MessagesServiceTests: XCTestCase {
         let noRetryClient = AnthropicClient(configuration: config)
         do {
             _ = try await noRetryClient.messages.create(
-                MessageRequest(model: .claude4Sonnet, messages: [.user("Hi")], maxTokens: 100)
+                MessageRequest(model: .claudeSonnet55, messages: [.user("Hi")], maxTokens: 100)
             )
             XCTFail("Should have thrown")
         } catch AnthropicError.rateLimited(let retryAfter) {
@@ -120,7 +120,7 @@ final class MessagesServiceTests: XCTestCase {
     func testCountTokensSendsCorrectPath() async throws {
         mock.handler = { _ in HTTPResponse(statusCode: 200, body: MockResponses.tokenCount) }
         let response = try await client.messages.countTokens(
-            CountTokensRequest(model: .claude4Sonnet, messages: [.user("Hello")])
+            CountTokensRequest(model: .claudeSonnet55, messages: [.user("Hello")])
         )
         XCTAssertEqual(mock.recordedRequests.first?.path, "/v1/messages/count_tokens")
         XCTAssertEqual(response.inputTokens, 42)

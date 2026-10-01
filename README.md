@@ -68,7 +68,7 @@ print(response.textContent)
 ```swift
 let response = try await client.messages.create(
     MessageRequest(
-        model: .claude4Sonnet,
+        model: .claudeSonnet55,
         messages: [
             .user("What is the capital of France?")
         ],
@@ -127,7 +127,7 @@ let weatherTool = Tool(
 
 let response = try await client.messages.create(
     MessageRequest(
-        model: .claude4Sonnet,
+        model: .claudeSonnet55,
         messages: [.user("What's the weather in London?")],
         maxTokens: 1024,
         tools: [weatherTool]
@@ -145,7 +145,7 @@ if let toolUse = response.firstToolUse {
 ```swift
 let count = try await client.messages.countTokens(
     CountTokensRequest(
-        model: .claude4Sonnet,
+        model: .claudeSonnet55,
         messages: [.user("Hello")]
     )
 )
@@ -158,7 +158,7 @@ print("Input tokens:", count.inputTokens)
 this SDK version:
 
 ```swift
-MessageRequest(model: .claudeOpus5, ...)                  // named constant
+MessageRequest(model: .claudeOpus55, ...)                 // named constant
 MessageRequest(model: "claude-some-future-model", ...)    // string literal, no SDK release needed
 ```
 
@@ -167,9 +167,14 @@ MessageRequest(model: "claude-some-future-model", ...)    // string literal, no 
 | `.claudeFable5` | `claude-fable-5` |
 | `.claudeOpus5` | `claude-opus-5` |
 | `.claudeOpus48` / `.claudeOpus47` / `.claudeOpus46` / `.claudeOpus45` | `claude-opus-4-8` … `-4-5` |
+| `.claudeSonnet55` | `claude-sonnet-5-5` |
 | `.claudeSonnet5` | `claude-sonnet-5` |
-| `.claudeSonnet46` / `.claudeSonnet45` | `claude-sonnet-4-6` / `-4-5` |
+| `.claudeSonnet46` | `claude-sonnet-4-6` |
 | `.claudeHaiku45` | `claude-haiku-4-5` |
+
+**Sonnet 4.5 retires on 2026-11-30.** Anthropic deprecated `claude-sonnet-4-5-20250929` on
+2026-09-30 and names Sonnet 5.5 as its replacement. `.claudeSonnet45` and `.claude4Sonnet` still
+send it and still work until then, and both now warn. Move to `.claudeSonnet55`.
 
 `.claudeMythos51` and `.claudeMythos5` are also defined, but only Project Glasswing participants
 can reach them.
@@ -200,7 +205,7 @@ print(model.displayName)
 let batch = try await client.batches.create(
     BatchCreateRequest(requests: [
         .init(customId: "req-1", params: MessageRequest(
-            model: .claude4Sonnet,
+            model: .claudeSonnet55,
             messages: [.user("Hello")],
             maxTokens: 100
         )),
@@ -232,7 +237,7 @@ let file = try await client.files.upload(
 // Use the file in a message
 let response = try await client.messages.create(
     MessageRequest(
-        model: .claude4Sonnet,
+        model: .claudeSonnet55,
         messages: [
             .user([
                 .text("Summarise this document:"),
@@ -430,7 +435,7 @@ final class MyTests: XCTestCase {
         )
 
         let response = try await client.messages.create(
-            MessageRequest(model: .claude4Sonnet, messages: [.user("Hi")], maxTokens: 100)
+            MessageRequest(model: .claudeSonnet55, messages: [.user("Hi")], maxTokens: 100)
         )
         XCTAssertEqual(response.id, "msg_01XFDUDYJgAACzvnptvVoYEL")
     }
