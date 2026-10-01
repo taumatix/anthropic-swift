@@ -3,40 +3,30 @@
 Ordered by how much each entry limits real deployments, not by how interesting it is to build.
 Each entry says what breaks today, so it can be judged on its own.
 
-## A custom `HTTPClient`'s stream is not origin-checked
+## A custom `HTTPClient` can opt out of the origin check by saying nothing
 
-**Today:** since 0.5.0 every unary response is refused unless it came from `baseURL`'s origin, and
-the SDK's own `URLSessionHTTPClient` checks its streams too. But `HTTPClient.stream(_:)` returns
-`AsyncThrowingStream<Data, Error>`, bytes with no response attached, so for a caller's own client
-the pipeline has nothing to compare. A caller transport that follows a redirect on a streaming
-request still delivers foreign SSE events as `MessageStreamEvent`s, which is the forgery 0.5.0
-closed for unary calls.
+**Today:** since 0.7.0 the origin check covers unary responses and streams, but only for a client
+that reports where its responses came from. A unary response with no `HTTPResponse.url` passes,
+and a client that does not implement `stream(_:validatingResponseFrom:)` streams through the
+default, which checks nothing. Both defaults exist so that clients written earlier keep working,
+and a caller cannot tell from the compiler that their client is unchecked. `MockHTTPClient`
+reports no URL on either path, so a test written against it cannot show whether the production
+client would pass.
 
-**Why it is not simply done:** the fix is a new protocol requirement, for instance a
-`streamResponse(_:)` returning the response head alongside the bytes. Adding a requirement breaks
-every conforming type unless it has a default implementation, and a default that calls `stream(_:)`
-has no URL either. So the default must degrade to "unchecked", exactly as a `nil`
-`HTTPResponse.url` does, and the pipeline must prefer the new method when it is implemented.
-
-**Shape:** an additive requirement with a default in a protocol extension,
-`URLSessionHTTPClient` implementing it, and `RequestPipeline.stream` checking the head before
-yielding. The end-to-end test is the unary one in `CrossOriginRedirectTests` with a streaming
-request through an unguarded client.
-
-## A response with no `url` skips the origin check
-
-**Today:** `HTTPResponse.url` is optional so that clients written before 0.5.0 keep compiling
-and working. The price is that a custom `HTTPClient` which never sets it gets no origin check at
-all. `MockHTTPClient` does not set it either, so a caller testing against it cannot tell whether
-their production client would pass the check.
-
-**Why it is not simply done:** refusing `nil` breaks every existing custom client at runtime, which
-is a break in behaviour, not only in source. It belongs in a major, with a deprecation first.
+**Why it is not simply done:** refusing an unattributed response breaks every existing custom
+client at runtime, which is a break in behaviour, not only in source. It belongs in a major, with
+a deprecation first.
 
 **Shape:** the SDK has no logger, so the warning has to come from the compiler. In a minor, add
-`HTTPResponse.init(statusCode:headers:body:url:)` with `url` non-optional, and deprecate the
-initializer that omits it, with a message saying why. Also let `MockHTTPClient` take a response
-URL. At 1.0, treat `nil` as a refusal, and record that in `MIGRATION.md` when the major is cut.
+`HTTPResponse.init(statusCode:headers:body:url:)` with `url` non-optional and deprecate the
+initializer that omits it. Let `MockHTTPClient` take a response URL for both paths. At 1.0, make
+`stream(_:validatingResponseFrom:)` a requirement with no default and treat a `nil` URL as a
+refusal, recorded in `MIGRATION.md`.
+
+A smaller gap from 0.7.0: `URLSessionHTTPClient` calls the pipeline's `validate` *and* keeps its own
+check against its own `baseURL`. The second check masks the first in every test, so deleting the
+`validate` call would leave the suite green. That is harmless while the two `baseURL`s agree, but
+nothing pins it.
 
 ## The transport policy is enforced per request, not per configuration
 
