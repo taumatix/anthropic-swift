@@ -9,6 +9,25 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-10-02
+
+### Security
+
+- **A stream through your own `HTTPClient` can now be origin-checked.** 0.5.0 refused a unary
+  response from any origin but `baseURL`'s, but a stream hands the pipeline bytes and no response,
+  so a caller's transport that followed a redirect still delivered the foreign origin's SSE as
+  `MessageStreamEvent`s. Reproduced end to end before this release: 8 forged events reached the
+  caller. `HTTPClient` gains `stream(_:validatingResponseFrom:)`, which `RequestPipeline` now
+  streams through with the origin check; a client that implements it is refused a foreign stream
+  with `AnthropicError.networkError` (`URLError.badServerResponse`) before any event is yielded.
+
+### Added
+
+- `HTTPClient.stream(_:validatingResponseFrom:)`. A new protocol requirement **with a default
+  implementation** that calls `stream(_:)` and checks nothing, so every existing conforming type
+  compiles and streams exactly as before. Implement it to be checked. `URLSessionHTTPClient`
+  implements it.
+
 ## [0.6.0] — 2026-10-02
 
 ### Added
@@ -305,7 +324,8 @@ they are documented as pinned rather than updated.
 - `README.md` — full feature documentation and usage examples
 - `Docs/ADR/` — eight Architectural Decision Records (0001–0008)
 
-[Unreleased]: https://github.com/taumatix/anthropic-swift/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/taumatix/anthropic-swift/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/taumatix/anthropic-swift/releases/tag/v0.7.0
 [0.6.0]: https://github.com/taumatix/anthropic-swift/releases/tag/v0.6.0
 [0.5.0]: https://github.com/taumatix/anthropic-swift/releases/tag/v0.5.0
 [0.4.0]: https://github.com/taumatix/anthropic-swift/releases/tag/v0.4.0

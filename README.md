@@ -31,7 +31,7 @@ Supports the Messages, Batches, Models, Files and Skills APIs, and the Admin/Org
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/taumatix/anthropic-swift", from: "0.6.0"),
+    .package(url: "https://github.com/taumatix/anthropic-swift", from: "0.7.0"),
 ],
 targets: [
     .target(name: "MyApp", dependencies: [
@@ -403,10 +403,12 @@ rather than documented:
   `URLError.badServerResponse` naming where it came from, and its body is discarded. Its status
   is not believed either: a foreign `401` is not reported as an authentication failure.
 
-  **If you supply your own `HTTPClient`, set `HTTPResponse.url`** to the URL the response came
-  from (`HTTPURLResponse.url`). A response with no `url` skips this check, so that clients written
-  before the property existed keep working. Streaming through a custom `HTTPClient` is not checked
-  yet, because `stream(_:)` returns bytes only; the SDK's own client checks both.
+  **If you supply your own `HTTPClient`, tell the SDK where responses came from.** Set
+  `HTTPResponse.url` (from `HTTPURLResponse.url`) on what `send` returns, and implement
+  `stream(_:validatingResponseFrom:)` to call `validate` with the response's URL before yielding
+  any bytes. A client that does neither keeps working but is not checked: a response with no `url`
+  passes, and a client without the streaming method falls back to `stream(_:)` unvalidated. The
+  SDK's own client does both.
 
 If you route through a gateway that redirects to a different host, point `baseURL` at the host that
 actually answers.

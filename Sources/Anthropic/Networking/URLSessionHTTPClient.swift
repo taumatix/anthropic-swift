@@ -82,6 +82,13 @@ public final class URLSessionHTTPClient: HTTPClient, @unchecked Sendable {
     }
 
     public func stream(_ request: HTTPRequest) -> AsyncThrowingStream<Data, Error> {
+        stream(request, validatingResponseFrom: { _ in })
+    }
+
+    public func stream(
+        _ request: HTTPRequest,
+        validatingResponseFrom validate: @escaping @Sendable (URL?) throws -> Void
+    ) -> AsyncThrowingStream<Data, Error> {
         // `try?` here used to discard whatever was thrown and substitute an `encodingError` about
         // the path, which would now report a refused `baseURL` as a serialisation bug. Report what
         // actually happened; `urlRequest(baseURL:)` already throws the path error itself.
@@ -98,12 +105,13 @@ public final class URLSessionHTTPClient: HTTPClient, @unchecked Sendable {
                         for: urlRequest,
                         delegate: CrossOriginRedirectGuard.shared
                     )
-                    // A stream hands the pipeline no response object, so its origin is checked
-                    // here, before a byte of it is read.
+                    // Checked here against this client's own baseURL even when the caller passes a
+                    // validate that does nothing: two guards on a credential is not duplication.
                     if let refusal = ResponseOrigin.refusal(for: urlResponse.url, baseURL: self.baseURL) {
                         continuation.finish(throwing: refusal)
                         return
                     }
+                    try validate(urlResponse.url)
                     // Validate status before streaming
                     if let httpResponse = urlResponse as? HTTPURLResponse,
                        !(200..<300).contains(httpResponse.statusCode) {
