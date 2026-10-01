@@ -9,6 +9,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-10-02
+
 ### Added
 
 - `Model.claudeSonnet55` (`claude-sonnet-5-5`), now the current Sonnet in Anthropic's model table.
@@ -303,7 +305,8 @@ they are documented as pinned rather than updated.
 - `README.md` — full feature documentation and usage examples
 - `Docs/ADR/` — eight Architectural Decision Records (0001–0008)
 
-[Unreleased]: https://github.com/taumatix/anthropic-swift/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/taumatix/anthropic-swift/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/taumatix/anthropic-swift/releases/tag/v0.6.0
 [0.5.0]: https://github.com/taumatix/anthropic-swift/releases/tag/v0.5.0
 [0.4.0]: https://github.com/taumatix/anthropic-swift/releases/tag/v0.4.0
 [0.3.0]: https://github.com/taumatix/anthropic-swift/releases/tag/v0.3.0
