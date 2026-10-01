@@ -175,6 +175,44 @@ final class CrossOriginRedirectTests: XCTestCase {
                        "the unguarded client never followed the redirect, so this proves nothing")
     }
 
+    /// The streaming half of the test above. A stream hands the pipeline no response, so until
+    /// `stream(_:validatingResponseFrom:)` a caller's transport that followed a redirect delivered
+    /// the foreign origin's SSE as `MessageStreamEvent`s.
+    func testAForgedStreamIsRefusedEvenWithoutTheRedirectGuard() async throws {
+        let (client, elsewhere) = try await startUnguardedClientRedirectingToAForgedStream {
+            UnguardedHTTPClient(baseURL: $0)
+        }
+
+        var events = 0
+        do {
+            for try await _ in client.messages.stream(
+                MessageRequest(model: .claudeSonnet5, messages: [.user("hi")], maxTokens: 16)
+            ) { events += 1 }
+            XCTFail("a forged stream was delivered to the caller as the API's")
+        } catch AnthropicError.networkError(let error) {
+            XCTAssertEqual(error.code, .badServerResponse)
+            XCTAssertEqual(error.failingURL?.port, elsewhere.port)
+        }
+        XCTAssertEqual(events, 0, "forged events reached the caller")
+        XCTAssertEqual(self.elsewhere?.receivedRequests.count, 1,
+                       "the unguarded client never followed the redirect, so this proves nothing")
+    }
+
+    /// The companion: a transport written before the new method existed still streams. Unchecked,
+    /// which is the documented cost of not adopting it, but not broken.
+    func testATransportWithoutTheNewMethodStillStreams() async throws {
+        let (client, _) = try await startUnguardedClientRedirectingToAForgedStream {
+            PreexistingHTTPClient(inner: UnguardedHTTPClient(baseURL: $0))
+        }
+
+        var events = 0
+        for try await _ in client.messages.stream(
+            MessageRequest(model: .claudeSonnet5, messages: [.user("hi")], maxTokens: 16)
+        ) { events += 1 }
+
+        XCTAssertGreaterThan(events, 0, "a pre-existing transport stopped streaming")
+    }
+
     /// Proves the forgery fixture would actually decode if it were delivered — otherwise the test
     /// above could pass because the body was unusable rather than because it never arrived.
     func testTheForgedFixtureWouldOtherwiseDecode() async throws {
@@ -253,18 +291,81 @@ final class CrossOriginRedirectTests: XCTestCase {
         let baseURL: URL
 
         func send(_ request: HTTPRequest) async throws -> HTTPResponse {
-            var urlRequest = URLRequest(url: baseURL.appendingPathComponent(request.path))
-            urlRequest.httpMethod = request.method
-            urlRequest.httpBody = request.body
-            request.headers.forEach { urlRequest.setValue($1, forHTTPHeaderField: $0) }
-            let (data, response) = try await URLSession.shared.data(for: urlRequest)
+            let (data, response) = try await URLSession.shared.data(for: urlRequest(request))
             let http = try XCTUnwrap(response as? HTTPURLResponse)
             return HTTPResponse(statusCode: http.statusCode, body: data, url: http.url)
         }
 
         func stream(_ request: HTTPRequest) -> AsyncThrowingStream<Data, Error> {
-            AsyncThrowingStream { $0.finish() }
+            stream(request, validatingResponseFrom: { _ in })
         }
+
+        /// What a caller's transport does to opt into the origin check: report where the
+        /// response came from before handing over a byte of it.
+        func stream(
+            _ request: HTTPRequest,
+            validatingResponseFrom validate: @escaping @Sendable (URL?) throws -> Void
+        ) -> AsyncThrowingStream<Data, Error> {
+            let urlRequest = urlRequest(request)
+            return AsyncThrowingStream { continuation in
+                Task {
+                    do {
+                        let (bytes, response) = try await URLSession.shared.bytes(for: urlRequest)
+                        try validate(response.url)
+                        var line = Data()
+                        for try await byte in bytes {
+                            line.append(byte)
+                            if byte == UInt8(ascii: "\n") { continuation.yield(line); line = Data() }
+                        }
+                        if !line.isEmpty { continuation.yield(line) }
+                        continuation.finish()
+                    } catch {
+                        continuation.finish(throwing: error)
+                    }
+                }
+            }
+        }
+
+        private func urlRequest(_ request: HTTPRequest) -> URLRequest {
+            var urlRequest = URLRequest(url: baseURL.appendingPathComponent(request.path))
+            urlRequest.httpMethod = request.method
+            urlRequest.httpBody = request.body
+            request.headers.forEach { urlRequest.setValue($1, forHTTPHeaderField: $0) }
+            return urlRequest
+        }
+    }
+
+    /// A caller's transport written before `stream(_:validatingResponseFrom:)` existed. It must
+    /// keep compiling and keep streaming, unchecked, rather than start failing.
+    private struct PreexistingHTTPClient: HTTPClient {
+        let inner: UnguardedHTTPClient
+
+        func send(_ request: HTTPRequest) async throws -> HTTPResponse { try await inner.send(request) }
+        func stream(_ request: HTTPRequest) -> AsyncThrowingStream<Data, Error> { inner.stream(request) }
+    }
+
+    /// An origin that redirects to another serving a well-formed SSE stream, behind a client built
+    /// by `transport`. Returns the client and the foreign origin's URL.
+    private func startUnguardedClientRedirectingToAForgedStream(
+        _ transport: (URL) -> any HTTPClient
+    ) async throws -> (AnthropicClient, URL) {
+        let elsewhere = try LoopbackHTTPServer { _ in
+            LoopbackHTTPServer.Response(status: 200, headers: ["Content-Type": "text/event-stream"],
+                                        body: SSEFixtures.basicMessageStream)
+        }
+        self.elsewhere = elsewhere
+        let elsewhereURL = try await elsewhere.start()
+
+        let origin = try LoopbackHTTPServer { _ in
+            .redirect(307, to: elsewhereURL.appendingPathComponent("v1/messages"))
+        }
+        self.origin = origin
+        let originURL = try await origin.start()
+
+        let client = AnthropicClient(configuration: ClientConfiguration(
+            apiKey: "test-key", baseURL: originURL, maxRetries: 0, httpClient: transport(originURL)
+        ))
+        return (client, elsewhereURL)
     }
 
     private static let forgedMessage = Data("""

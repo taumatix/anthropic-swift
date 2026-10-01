@@ -62,7 +62,12 @@ public final class RequestPipeline: Sendable {
     /// Returns a stream of raw `Data` chunks for an SSE request.
     public func stream(_ request: HTTPRequest) -> AsyncThrowingStream<Data, Error> {
         let prepared = prepare(request, isAdmin: false)
-        return configuration.httpClient.stream(prepared)
+        let baseURL = configuration.baseURL
+        return configuration.httpClient.stream(prepared, validatingResponseFrom: { url in
+            if let refusal = ResponseOrigin.refusal(for: url, baseURL: baseURL) {
+                throw refusal
+            }
+        })
     }
 
     // MARK: - Helpers
