@@ -31,7 +31,7 @@ Supports the Messages, Batches, Models, Files and Skills APIs, and the Admin/Org
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/taumatix/anthropic-swift", from: "0.8.0"),
+    .package(url: "https://github.com/taumatix/anthropic-swift", from: "0.9.0"),
 ],
 targets: [
     .target(name: "MyApp", dependencies: [
@@ -408,7 +408,8 @@ rather than documented:
   `stream(_:validatingResponseFrom:)` to call `validate` with the response's URL before yielding
   any bytes. A client that does neither keeps working but is not checked: a response with no `url`
   passes, and a client without the streaming method falls back to `stream(_:)` unvalidated. The
-  SDK's own client does both.
+  SDK's own client does both. **At 1.0 a response with no `url` will be refused**, so a client
+  that says nothing will stop working then rather than go on unchecked; report the URL now.
 
 If you route through a gateway that redirects to a different host, point `baseURL` at the host that
 actually answers.
@@ -444,6 +445,11 @@ final class MyTests: XCTestCase {
     }
 }
 ```
+
+A mock reports no origin by default, which the response-origin check lets through. To test as the
+production transport is checked, give it one: `MockHTTPClient(responseURL:)` reports that URL on
+unary responses and to the streaming path's check. Use your configured `baseURL` to pass, or another
+origin to see the refusal.
 
 ## Running Examples
 

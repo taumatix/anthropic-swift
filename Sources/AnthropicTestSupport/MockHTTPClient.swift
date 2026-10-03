@@ -29,7 +29,22 @@ public final class MockHTTPClient: HTTPClient, @unchecked Sendable {
     private var _requests: [HTTPRequest] = []
     private let lock = NSLock()
 
+    /// The URL the mock reports its responses as coming from, or `nil` to report none.
+    ///
+    /// `RequestPipeline` refuses a response from any origin but the configured `baseURL`'s, and
+    /// lets through one that reports no origin. Set this to see that check as a production
+    /// transport meets it: the configured base URL to pass, another origin to be refused. It is
+    /// reported on both paths: as ``HTTPResponse/url`` on a response the handler left without
+    /// one, and to the `validate` of ``stream(_:validatingResponseFrom:)``.
+    public var responseURL: URL?
+
     public init() {}
+
+    /// A mock that reports its responses as coming from `responseURL`.
+    public convenience init(responseURL: URL?) {
+        self.init()
+        self.responseURL = responseURL
+    }
 
     public var recordedRequests: [HTTPRequest] {
         lock.withLock { _requests }
@@ -37,10 +52,16 @@ public final class MockHTTPClient: HTTPClient, @unchecked Sendable {
 
     public func send(_ request: HTTPRequest) async throws -> HTTPResponse {
         lock.withLock { _requests.append(request) }
-        guard let handler = handler else {
-            return HTTPResponse(statusCode: 200, body: Data("{}".utf8))
+        let response: HTTPResponse
+        if let handler = handler {
+            response = try await handler(request)
+        } else {
+            response = HTTPResponse(statusCode: 200, body: Data("{}".utf8))
         }
-        return try await handler(request)
+        guard response.url == nil, let responseURL = lock.withLock({ self.responseURL }) else {
+            return response
+        }
+        return HTTPResponse(statusCode: response.statusCode, headers: response.headers, body: response.body, url: responseURL)
     }
 
     public func stream(_ request: HTTPRequest) -> AsyncThrowingStream<Data, Error> {
@@ -49,6 +70,19 @@ public final class MockHTTPClient: HTTPClient, @unchecked Sendable {
             return AsyncThrowingStream { $0.finish() }
         }
         return streamHandler(request)
+    }
+
+    public func stream(
+        _ request: HTTPRequest,
+        validatingResponseFrom validate: @escaping @Sendable (URL?) throws -> Void
+    ) -> AsyncThrowingStream<Data, Error> {
+        do {
+            try validate(lock.withLock { responseURL })
+        } catch {
+            lock.withLock { _requests.append(request) }
+            return AsyncThrowingStream { $0.finish(throwing: error) }
+        }
+        return stream(request)
     }
 
     /// Resets recorded requests and handlers.
