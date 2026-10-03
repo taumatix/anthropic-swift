@@ -31,7 +31,7 @@ Supports the Messages, Batches, Models, Files and Skills APIs, and the Admin/Org
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/taumatix/anthropic-swift", from: "0.7.0"),
+    .package(url: "https://github.com/taumatix/anthropic-swift", from: "0.8.0"),
 ],
 targets: [
     .target(name: "MyApp", dependencies: [
@@ -413,10 +413,11 @@ rather than documented:
 If you route through a gateway that redirects to a different host, point `baseURL` at the host that
 actually answers.
 
-> **`timeout` is currently ignored.** It is stored on the configuration but never reaches the
-> `URLSession`, which uses its own 60-second default. Setting it has no effect today; a long
-> streaming turn can still fail at 60s as `AnthropicError.timeout`. Tracked at the top of
-> [ROADMAP.md](ROADMAP.md).
+`timeout` (default 600 seconds) is how long a request may go without receiving data before it fails
+with `AnthropicError.timeout`. It bounds the gap between packets, not the whole request, so a long
+streaming turn that keeps sending events is not cut off. Before 0.8.0 it was ignored and every
+request used `URLSession`'s 60-second default. A custom `HTTPClient` receives it as
+`HTTPRequest.timeout`.
 
 ## Testing
 

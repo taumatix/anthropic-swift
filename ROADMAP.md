@@ -23,6 +23,14 @@ initializer that omits it. Let `MockHTTPClient` take a response URL for both pat
 `stream(_:validatingResponseFrom:)` a requirement with no default and treat a `nil` URL as a
 refusal, recorded in `MIGRATION.md`.
 
+**Rethink before building (2026-10-04 roadmap pass, which skipped this entry for that reason):**
+deprecating the URL-less initializer warns on every `HTTPResponse` a test double builds. That is
+90 in this repo alone, and many more in users' test suites, for code where a URL means nothing. A
+warning that fires mostly where it is irrelevant teaches people to ignore it. Alternatives worth
+weighing: deprecate nothing and have `MockHTTPClient` fill in its configured base URL; or warn only
+in `URLSessionHTTPClient`-shaped code by moving the check into a protocol a production transport
+adopts.
+
 A smaller gap from 0.7.0: `URLSessionHTTPClient` calls the pipeline's `validate` *and* keeps its own
 check against its own `baseURL`. The second check masks the first in every test, so deleting the
 `validate` call would leave the suite green. That is harmless while the two `baseURL`s agree, but
@@ -51,28 +59,21 @@ guards on a credential is not duplication.
 
 ## Configuration that is stored and never applied
 
-**Today:** `ClientConfiguration.timeout` is written, documented as "Default: `600` (10 minutes, for
-streaming)", and **never reaches the network layer**. The SDK's own `URLSessionHTTPClient` is built
-with `URLSession.shared`, whose `timeoutIntervalForRequest` is 60 seconds. So
-`ClientOptions.timeout(600)` does nothing, and a long streaming turn dies at 60s having been
-promised ten minutes — as a `URLError` mapped to `AnthropicError.timeout`, which reads like the
-server was slow rather than like the SDK ignored the setting.
+**Today:** `timeout` was the second `ClientConfiguration` property found stored and never read
+(after `baseURL`, 2026-09-22). It was fixed in 0.8.0 by carrying it on `HTTPRequest` and applying it
+as `URLRequest.timeoutInterval`, rather than building a session per configuration as this entry
+first proposed. That keeps `URLSession.shared` and its pooling. What the entry was really about is
+still open: nothing checks that each public property of `ClientConfiguration` reaches anything.
+The next one added can be dead on arrival the same way.
 
-This is the same defect as the `baseURL` one fixed on 2026-09-22, and finding a second instance is
-why it is at the top: `ClientConfiguration` is a bag of stored properties, and nothing checks that
-any of them is wired to anything. `retryPolicy` and `maxRetries` *are* honoured, by
-`RequestPipeline`. `timeout` is not honoured by anyone.
+**Shape:** one test per public property of `ClientConfiguration`, asserting that changing it
+changes an observable request or client property, plus a test that counts the properties by
+reflection (`Mirror`) and fails when one has no such test. The count is what makes the next
+addition fail loudly instead of silently.
 
-**Why it is not simply done:** building a per-configuration `URLSession` instead of sharing
-`.shared` changes connection pooling and cookie/cache scope, so it is a behaviour change beyond the
-one property. The timeout also has two meanings — per-request and per-resource — and streaming
-wants them set differently from unary calls.
-
-**Shape:** construct the session from the configuration (`timeoutIntervalForRequest` for unary,
-`timeoutIntervalForResource` for streaming), rebuilt on assignment the way `baseURL` now is. Then
-the test that would have caught both: assert, for every public property of `ClientConfiguration`,
-that changing it changes an observable request or client property. A property nothing reads is the
-bug this entry is really about.
+Also open from 0.8.0: `timeoutInterval` bounds the gap between packets, and nothing bounds a whole
+request. A stream that trickles one byte a minute never times out. That is probably right for a
+streaming API, but no caller has said so either way.
 
 ## Ergonomics the Skills GA migration left on the table
 
