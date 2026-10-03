@@ -74,6 +74,10 @@ public final class RequestPipeline: Sendable {
 
     private func prepare(_ request: HTTPRequest, isAdmin: Bool) -> HTTPRequest {
         var req = request
+        // A timeout the service set on the request wins; otherwise the configuration's applies.
+        if req.timeout == nil {
+            req.timeout = configuration.timeout
+        }
         let apiKey = isAdmin ? (configuration.adminAPIKey ?? configuration.apiKey) : configuration.apiKey
 
         var headers: [String: String] = [

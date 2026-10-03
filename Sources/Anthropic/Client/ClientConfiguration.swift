@@ -39,7 +39,9 @@ public struct ClientConfiguration: Sendable {
     /// The Anthropic API version header value. Default: `"2023-06-01"`.
     public var anthropicVersion: String
 
-    /// Request timeout in seconds. Default: `600` (10 minutes, for streaming).
+    /// How long a request may go without receiving data before it fails, in seconds.
+    /// Default: `600` (10 minutes, for streaming). It bounds the gap between packets, not the
+    /// whole request, and reaches the transport as ``HTTPRequest/timeout``.
     public var timeout: TimeInterval
 
     /// Maximum number of retry attempts for retryable errors. Default: `2`.

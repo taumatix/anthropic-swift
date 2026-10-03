@@ -9,6 +9,25 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-10-04
+
+### Fixed
+
+- **`ClientConfiguration.timeout` was ignored.** It was documented as the request timeout
+  (default 600 s, "for streaming") and nothing read it: the SDK's transport ran on
+  `URLSession.shared`, whose per-request timeout is 60 s. A streaming turn that went quiet for a
+  minute died with `AnthropicError.timeout` having been promised ten, and a short timeout a caller
+  asked for never fired. The pipeline now puts the configured value on every request, and the
+  transport applies it as `URLRequest.timeoutInterval`. That bounds the gap between packets, so a
+  stream that keeps sending is never cut off, whatever its length. `URLSession.shared` is still
+  the session, so connection pooling and cookie scope are unchanged. Reproduced against a
+  loopback server that answers late, for both unary and streaming, before the fix.
+
+### Added
+
+- `HTTPRequest.timeout`, the per-request timeout the pipeline sets from the configuration. A
+  timeout set on the request itself is kept. A custom `HTTPClient` should honour it.
+
 ## [0.7.0] — 2026-10-02
 
 ### Security
@@ -324,7 +343,8 @@ they are documented as pinned rather than updated.
 - `README.md` — full feature documentation and usage examples
 - `Docs/ADR/` — eight Architectural Decision Records (0001–0008)
 
-[Unreleased]: https://github.com/taumatix/anthropic-swift/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/taumatix/anthropic-swift/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/taumatix/anthropic-swift/releases/tag/v0.8.0
 [0.7.0]: https://github.com/taumatix/anthropic-swift/releases/tag/v0.7.0
 [0.6.0]: https://github.com/taumatix/anthropic-swift/releases/tag/v0.6.0
 [0.5.0]: https://github.com/taumatix/anthropic-swift/releases/tag/v0.5.0
