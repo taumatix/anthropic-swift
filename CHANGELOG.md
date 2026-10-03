@@ -9,6 +9,23 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.9.0] — 2026-10-04
+
+### Added
+
+- **`MockHTTPClient(responseURL:)` and `MockHTTPClient.responseURL`.** A mock reported no origin,
+  which the response-origin check lets through, so a test written against it could not show
+  whether the production transport would be refused. With `responseURL` set, the mock reports it
+  as `HTTPResponse.url` on a unary response that has none, and to `validate` in
+  `stream(_:validatingResponseFrom:)`, which the mock now implements. Unset, nothing changes.
+
+### Upcoming in 1.0
+
+- A response whose `HTTPClient` reports no URL will be refused, rather than passed unchecked. A
+  custom client should set `HTTPResponse.url` and implement `stream(_:validatingResponseFrom:)`
+  now. The URL-less `HTTPResponse` initializer is *not* deprecated: it is what test doubles use,
+  where a URL means nothing, and a warning on every one of them would teach people to ignore it.
+
 ## [0.8.0] — 2026-10-04
 
 ### Fixed

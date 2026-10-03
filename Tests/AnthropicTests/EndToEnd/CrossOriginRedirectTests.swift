@@ -16,6 +16,13 @@ import AnthropicTestSupport
 ///   an `https://` base.
 ///
 /// Two loopback servers on different ports make it observable without leaving the host.
+private final class SeenURL: @unchecked Sendable {
+    private let lock = NSLock()
+    private var url: URL?
+    func set(_ url: URL?) { lock.withLock { self.url = url } }
+    func get() -> URL? { lock.withLock { url } }
+}
+
 final class CrossOriginRedirectTests: XCTestCase {
 
     private var origin: LoopbackHTTPServer?
@@ -196,6 +203,30 @@ final class CrossOriginRedirectTests: XCTestCase {
         XCTAssertEqual(events, 0, "forged events reached the caller")
         XCTAssertEqual(self.elsewhere?.receivedRequests.count, 1,
                        "the unguarded client never followed the redirect, so this proves nothing")
+    }
+
+    /// `URLSessionHTTPClient` also checks a stream against its own `baseURL`, which always agrees
+    /// with the pipeline's, so every test above passes whether or not it calls the `validate` it
+    /// was handed. This drives it directly, over a real socket, with a `validate` that refuses.
+    func testTheSDKTransportCallsTheValidateItIsGiven() async throws {
+        let server = try LoopbackHTTPServer { _ in .json(200, Data("data: {}\n\n".utf8)) }
+        self.origin = server
+        let baseURL = try await server.start()
+
+        struct Refused: Error {}
+        let seen = SeenURL()
+        let transport = URLSessionHTTPClient(baseURL: baseURL, allowsInsecureBaseURL: true)
+        var chunks = 0
+        do {
+            for try await _ in transport.stream(
+                HTTPRequest(method: "POST", path: "/v1/messages"),
+                validatingResponseFrom: { url in seen.set(url); throw Refused() }
+            ) { chunks += 1 }
+            XCTFail("the stream went ahead although validate threw")
+        } catch is Refused {}
+
+        XCTAssertEqual(chunks, 0, "bytes were yielded before validate was consulted")
+        XCTAssertEqual(seen.get()?.port, baseURL.port, "validate was not given the response's URL")
     }
 
     /// The companion: a transport written before the new method existed still streams. Unchecked,

@@ -3,39 +3,6 @@
 Ordered by how much each entry limits real deployments, not by how interesting it is to build.
 Each entry says what breaks today, so it can be judged on its own.
 
-## A custom `HTTPClient` can opt out of the origin check by saying nothing
-
-**Today:** since 0.7.0 the origin check covers unary responses and streams, but only for a client
-that reports where its responses came from. A unary response with no `HTTPResponse.url` passes,
-and a client that does not implement `stream(_:validatingResponseFrom:)` streams through the
-default, which checks nothing. Both defaults exist so that clients written earlier keep working,
-and a caller cannot tell from the compiler that their client is unchecked. `MockHTTPClient`
-reports no URL on either path, so a test written against it cannot show whether the production
-client would pass.
-
-**Why it is not simply done:** refusing an unattributed response breaks every existing custom
-client at runtime, which is a break in behaviour, not only in source. It belongs in a major, with
-a deprecation first.
-
-**Shape:** the SDK has no logger, so the warning has to come from the compiler. In a minor, add
-`HTTPResponse.init(statusCode:headers:body:url:)` with `url` non-optional and deprecate the
-initializer that omits it. Let `MockHTTPClient` take a response URL for both paths. At 1.0, make
-`stream(_:validatingResponseFrom:)` a requirement with no default and treat a `nil` URL as a
-refusal, recorded in `MIGRATION.md`.
-
-**Rethink before building (2026-10-04 roadmap pass, which skipped this entry for that reason):**
-deprecating the URL-less initializer warns on every `HTTPResponse` a test double builds. That is
-90 in this repo alone, and many more in users' test suites, for code where a URL means nothing. A
-warning that fires mostly where it is irrelevant teaches people to ignore it. Alternatives worth
-weighing: deprecate nothing and have `MockHTTPClient` fill in its configured base URL; or warn only
-in `URLSessionHTTPClient`-shaped code by moving the check into a protocol a production transport
-adopts.
-
-A smaller gap from 0.7.0: `URLSessionHTTPClient` calls the pipeline's `validate` *and* keeps its own
-check against its own `baseURL`. The second check masks the first in every test, so deleting the
-`validate` call would leave the suite green. That is harmless while the two `baseURL`s agree, but
-nothing pins it.
-
 ## The transport policy is enforced per request, not per configuration
 
 **Today:** `BaseURLPolicy.validate` runs inside `URLSessionHTTPClient.send`/`stream`. That is
@@ -231,3 +198,17 @@ yet had a roadmap pass that read the source properly.
 **Shape:** the next roadmap pass reads `Sources/Anthropic` — retry policy, backoff, streaming
 backpressure, cancellation, error typing — and replaces this placeholder with real entries.
 An entry written from the code is worth more than one guessed before reading it.
+
+## A custom `HTTPClient` can opt out of the origin check by saying nothing (for 1.0)
+
+**Today:** a unary response with no `HTTPResponse.url` passes the origin check, and a client that
+does not implement `stream(_:validatingResponseFrom:)` streams unchecked. 0.9.0 settled the
+non-breaking half: no deprecation of the URL-less initializer (it would warn on every test double,
+90 in this repo alone), `MockHTTPClient(responseURL:)` so tests can see the check, a test pinning
+that `URLSessionHTTPClient` calls the `validate` it is given, and the 1.0 change announced in the
+README and CHANGELOG.
+
+**Shape, at 1.0:** treat a `nil` URL as a refusal, and make `stream(_:validatingResponseFrom:)` a
+requirement with no default. `MockHTTPClient` then needs a default `responseURL`, the configured
+base URL, which it cannot know today because `HTTPRequest` is path-relative; the likeliest answer
+is for the pipeline to hand the base URL to the client. Record all of it in a `MIGRATION.md`.
