@@ -3,23 +3,13 @@
 Ordered by how much each entry limits real deployments, not by how interesting it is to build.
 Each entry says what breaks today, so it can be judged on its own.
 
-## Configuration that is stored and never applied
+## Nothing bounds a whole request
 
-**Today:** `timeout` was the second `ClientConfiguration` property found stored and never read
-(after `baseURL`, 2026-09-22). It was fixed in 0.8.0 by carrying it on `HTTPRequest` and applying it
-as `URLRequest.timeoutInterval`, rather than building a session per configuration as this entry
-first proposed. That keeps `URLSession.shared` and its pooling. What the entry was really about is
-still open: nothing checks that each public property of `ClientConfiguration` reaches anything.
-The next one added can be dead on arrival the same way.
-
-**Shape:** one test per public property of `ClientConfiguration`, asserting that changing it
-changes an observable request or client property, plus a test that counts the properties by
-reflection (`Mirror`) and fails when one has no such test. The count is what makes the next
-addition fail loudly instead of silently.
-
-Also open from 0.8.0: `timeoutInterval` bounds the gap between packets, and nothing bounds a whole
-request. A stream that trickles one byte a minute never times out. That is probably right for a
-streaming API, but no caller has said so either way.
+`ClientConfiguration.timeout` is `URLRequest.timeoutInterval`, which bounds the gap between packets
+(0.8.0). A stream that trickles one byte a minute never times out. That is probably right for a
+streaming API, whose turns can legitimately run for many minutes, but no caller has said so
+either way. If one does, the shape is a separate, opt-in total deadline, not a change to
+`timeout`: a caller's own Task cancellation already ends a request.
 
 ## Ergonomics the Skills GA migration left on the table
 
