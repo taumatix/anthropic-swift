@@ -9,6 +9,18 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.10.1] — 2026-10-05
+
+### Fixed
+
+- **Iterating a `Page` could request the same page for ever.** A server that returned a cursor it
+  had already returned made `for try await` keep fetching that page, nearly ten million requests
+  in five seconds against a mock, and never end. Iteration now ends with
+  `AnthropicError.networkError` (`URLError.badServerResponse`) at the first repeated cursor,
+  rather than ending quietly as if the list were complete. Iteration also now honours task
+  cancellation between pages, so a listing that keeps returning new cursors with empty pages can
+  be cancelled.
+
 ## [0.10.0] — 2026-10-04
 
 ### Security

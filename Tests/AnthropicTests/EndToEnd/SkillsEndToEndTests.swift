@@ -93,6 +93,27 @@ final class SkillsEndToEndTests: XCTestCase {
                        "the filter must survive the page boundary")
     }
 
+    /// A server that keeps answering with the same `next_page` must not be asked for ever: the
+    /// iteration ends with an error after asking for the repeated token once.
+    func testAServerRepeatingItsTokenEndsTheIterationOverARealSocket() async throws {
+        let page = Data("""
+        {"data":[{"id":"skill_01","type":"skill","display_name":"One","latest_version_id":"ver_1",
+          "source":{"type":"custom"},"created_at":"2025-01-01T00:00:00Z",
+          "updated_at":"2025-01-01T00:00:00Z"}],"next_page":"same"}
+        """.utf8)
+        let client = try await startClient { _ in .json(200, page) }
+
+        var collected: [String] = []
+        do {
+            for try await skill in try await client.skills.list() { collected.append(skill.displayName) }
+            XCTFail("a repeating token ended as if the list were complete")
+        } catch AnthropicError.networkError(let error) {
+            XCTAssertEqual(error.code, .badServerResponse)
+        }
+        XCTAssertEqual(collected, ["One", "One"])
+        XCTAssertEqual(server.receivedRequests.count, 2, "the first page, then one fetch with the token; the repeat is refused")
+    }
+
     // MARK: - Create
 
     func testCreateSendsAMultipartFileSetOverARealSocket() async throws {
