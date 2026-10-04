@@ -3,27 +3,6 @@
 Ordered by how much each entry limits real deployments, not by how interesting it is to build.
 Each entry says what breaks today, so it can be judged on its own.
 
-## The transport policy is enforced per request, not per configuration
-
-**Today:** `BaseURLPolicy.validate` runs inside `URLSessionHTTPClient.send`/`stream`. That is
-correct for the SDK's own transport and invisible to everything else. A caller who injects their
-own `HTTPClient` — which the README tells them to do for testing, and which is how a pinned
-`URLSession` gets in — is subject to no policy at all: their client can send the key to
-`http://anywhere` and the configuration that says `allowsInsecureBaseURL = false` will not stop it.
-
-The 2026-09-26 pass fixed the half of this that was a plumbing bug (assigning `httpClient` skipped
-the retarget, so configuration and transport disagreed). What is left is structural: the policy
-lives in one implementation of a public protocol rather than in the pipeline every request crosses.
-
-**Why it is not simply done:** moving the check into `RequestPipeline` changes where the error
-surfaces for anyone who already catches it, and `MockHTTPClient`-based tests deliberately use
-`http://` and unreachable hosts — several would start failing. It needs a way for a test double to
-declare itself exempt that is not also an exemption a production caller can reach for.
-
-**Shape:** validate in `RequestPipeline` before dispatch, with the exemption keyed on the client
-being a test double rather than on a flag. Keep the check in `URLSessionHTTPClient` as well; two
-guards on a credential is not duplication.
-
 ## Configuration that is stored and never applied
 
 **Today:** `timeout` was the second `ClientConfiguration` property found stored and never read
@@ -207,6 +186,11 @@ non-breaking half: no deprecation of the URL-less initializer (it would warn on 
 90 in this repo alone), `MockHTTPClient(responseURL:)` so tests can see the check, a test pinning
 that `URLSessionHTTPClient` calls the `validate` it is given, and the 1.0 change announced in the
 README and CHANGELOG.
+
+Related, since 0.10.0: the pipeline enforces the plaintext policy on the configured `baseURL`
+for every client, but a custom client may route a path-relative `HTTPRequest` anywhere it likes.
+Handing the client the base URL, the same change the mock needs below, would let the pipeline
+check the URL a request is actually for.
 
 **Shape, at 1.0:** treat a `nil` URL as a refusal, and make `stream(_:validatingResponseFrom:)` a
 requirement with no default. `MockHTTPClient` then needs a default `responseURL`, the configured

@@ -31,6 +31,9 @@ public final class RequestPipeline: Sendable {
 
     /// Sends a request and returns the raw `HTTPResponse`.
     public func sendRaw(_ request: HTTPRequest) async throws -> HTTPResponse {
+        // Before any client is handed the request: the key is in it. URLSessionHTTPClient checks
+        // as well, but a client the caller supplied would otherwise check nothing.
+        try BaseURLPolicy.validate(configuration.baseURL, allowsInsecure: configuration.allowsInsecureBaseURL)
         var attempt = 0
         while true {
             let prepared = prepare(request, isAdmin: isAdminPath(request.path))
@@ -61,6 +64,11 @@ public final class RequestPipeline: Sendable {
 
     /// Returns a stream of raw `Data` chunks for an SSE request.
     public func stream(_ request: HTTPRequest) -> AsyncThrowingStream<Data, Error> {
+        do {
+            try BaseURLPolicy.validate(configuration.baseURL, allowsInsecure: configuration.allowsInsecureBaseURL)
+        } catch {
+            return AsyncThrowingStream { $0.finish(throwing: error) }
+        }
         let prepared = prepare(request, isAdmin: false)
         let baseURL = configuration.baseURL
         return configuration.httpClient.stream(prepared, validatingResponseFrom: { url in
