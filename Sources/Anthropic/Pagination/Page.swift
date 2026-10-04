@@ -53,9 +53,15 @@ public struct Page<T: Sendable & Decodable>: Sendable {
     /// ``lastId`` for id-paginated ones. The service that built the page supplies a fetcher that
     /// knows which of the two it asked for.
     func fetchNextPage() async throws -> Page<T>? {
+        guard let (cursor, fetcher) = nextFetch else { return nil }
+        return try await fetcher(cursor)
+    }
+
+    /// The cursor the next page would be fetched with, and the fetcher, or `nil` on the last page.
+    var nextFetch: (cursor: String, fetcher: @Sendable (String) async throws -> Page<T>)? {
         guard hasMore, let fetcher = nextPageFetcher else { return nil }
         guard let cursor = nextPageToken ?? lastId else { return nil }
-        return try await fetcher(cursor)
+        return (cursor, fetcher)
     }
 }
 
@@ -67,6 +73,9 @@ extension Page: AsyncSequence {
     public struct AsyncIterator: AsyncIteratorProtocol {
         private var currentPage: Page<T>
         private var index: Int
+        /// Every cursor a page has been fetched with. A server that hands one back again would
+        /// otherwise be asked for the same page for ever.
+        private var fetchedWith: Set<String> = []
 
         init(page: Page<T>) {
             self.currentPage = page
@@ -83,8 +92,18 @@ extension Page: AsyncSequence {
                     index += 1
                     return item
                 }
-                guard let nextPage = try await currentPage.fetchNextPage() else { return nil }
-                currentPage = nextPage
+                guard let (cursor, fetcher) = currentPage.nextFetch else { return nil }
+                // Distinct cursors and empty pages for ever cannot be told from a long listing, so
+                // cancellation is the caller's way out of that one.
+                try Task.checkCancellation()
+                guard fetchedWith.insert(cursor).inserted else {
+                    // Ending quietly here would look like a complete list.
+                    throw AnthropicError.networkError(URLError(.badServerResponse, userInfo: [
+                        NSLocalizedDescriptionKey:
+                            "The server returned a page cursor it had already returned, so the listing would never end.",
+                    ]))
+                }
+                currentPage = try await fetcher(cursor)
                 index = 0
             }
         }

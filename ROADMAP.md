@@ -29,12 +29,6 @@ justifies a pass on its own.
 - **Retire `list(limit:afterId:)` and `create(_:)`.** Both are deprecated and both hit endpoints
   that reject them. `let fn = client.skills.list` still binds to the deprecated overload, so the
   ambiguity only really goes away when it does.
-- **`Page` iteration has no loop guard.** A server that returns the same `next_page` token twice
-  makes `for try await` spin forever, issuing requests and never yielding a terminal condition —
-  found by writing a test whose mock replayed one fixture, which hung the suite until it was
-  killed. A real server terminating is not a guarantee the SDK should rely on. Cheapest fix is to
-  stop when a token repeats and to check `Task.isCancelled` each time round, so a caller can at
-  least cancel out.
 
 ## Model the Skill versions sub-resource
 

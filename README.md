@@ -31,7 +31,7 @@ Supports the Messages, Batches, Models, Files and Skills APIs, and the Admin/Org
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/taumatix/anthropic-swift", from: "0.10.0"),
+    .package(url: "https://github.com/taumatix/anthropic-swift", from: "0.10.1"),
 ],
 targets: [
     .target(name: "MyApp", dependencies: [
