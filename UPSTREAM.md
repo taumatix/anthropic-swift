@@ -9,7 +9,7 @@ API you are calling.
 - name: anthropic-api-version
   kind: literal
   value: "2023-06-01"
-  checked: 2026-09-27
+  checked: 2026-10-05
   note: >-
     sent as the anthropic-version header on every request;
     ClientConfiguration.defaultAnthropicVersion. Still the newest version in the
@@ -18,7 +18,7 @@ API you are calling.
 - name: files-api-beta
   kind: literal
   value: "files-api-2025-04-14"
-  checked: 2026-09-27
+  checked: 2026-10-05
   note: >-
     anthropic-beta header sent by FilesService. STALE: the Files API left beta. The
     header is now optional and requests that send it keep the beta response shapes,
@@ -29,7 +29,7 @@ API you are calling.
 - name: skills-api-beta
   kind: literal
   value: "skills-2025-10-02"
-  checked: 2026-09-27
+  checked: 2026-10-05
   hold: >-
     RETIRED FROM USE, not stale. SkillsService no longer sends this header — it is
     still a live beta value, but the beta endpoint returns the same object and the
@@ -43,7 +43,7 @@ API you are calling.
   kind: github-release
   repo: anthropics/anthropic-sdk-python
   tag: v1.11.0
-  checked: 2026-10-01
+  checked: 2026-10-05
   note: >-
     not ported from, but read as the reference for new API surface — what it gains,
     this lacks. v1.8.0 (2026-09-22) added claude-opus-5-5, inline tool definitions
@@ -59,7 +59,7 @@ API you are calling.
 - name: model-ids
   kind: literal
   value: "fable-5-1, opus-5-5, sonnet-5-5, haiku-4-5"
-  checked: 2026-10-01
+  checked: 2026-10-05
   note: >-
     the four current models per the docs' comparison table; Model.swift carries
     these plus every legacy ID. A model released later still works — Model takes an
@@ -234,3 +234,20 @@ Pages read on 2026-09-27, a maintenance pass. Two pins moved, and both were mode
   minimum-lifetime commitment and no deprecation has been announced. Anthropic gives at least 60
   days' notice, so the next pass should re-read this row.
 - `anthropics/anthropic-sdk-python`: v1.8.0 is still the latest release.
+
+Pages read on 2026-10-05, a maintenance pass. **Nothing drifted**, so every pin is re-dated, not
+moved:
+
+- <https://platform.claude.com/docs/en/api/versioning>: `2023-06-01` is still the newest, and the
+  history still has two entries.
+- <https://platform.claude.com/docs/en/build-with-claude/files>: still GA, the header is still
+  optional, and the migration table still has the same four rows.
+- <https://platform.claude.com/docs/en/api/beta/skills/list>: `skills-2025-10-02` is still in the
+  enum, which now has 50 values (`ce-plugins-2026-09-01` and `spend-limit-reads-2026-09-26` are
+  new). `BetaSkill` still matches the GA `Skill` field for field, with the same four source kinds.
+- <https://platform.claude.com/docs/en/about-claude/models/overview>: the same four current models
+  as 2026-10-01, with Sonnet 5.5 the current Sonnet.
+- <https://platform.claude.com/docs/en/about-claude/model-deprecations>: Sonnet 4.5 is still the
+  only deprecated public model, retiring 2026-11-30. `claude-haiku-4-5-20251001` is still Active
+  with no deprecation announced, ten days before its "not sooner than October 15, 2026" date.
+- `anthropics/anthropic-sdk-python`: v1.11.0 is still the latest release.
