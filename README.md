@@ -31,7 +31,7 @@ Supports the Messages, Batches, Models, Files and Skills APIs, and the Admin/Org
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/taumatix/anthropic-swift", from: "0.9.0"),
+    .package(url: "https://github.com/taumatix/anthropic-swift", from: "0.10.0"),
 ],
 targets: [
     .target(name: "MyApp", dependencies: [
@@ -387,6 +387,9 @@ rather than documented:
   `http://localhost.example.com` is refused. If you genuinely have an internal plaintext gateway,
   set `allowsInsecureBaseURL: true` (or `.allowsInsecureBaseURL(true)` on the builder) and your
   key goes out in the clear, which is the point of having to write it.
+  This holds for an `HTTPClient` you supply too: the check runs before any client is handed the
+  request. It checks the configured `baseURL`, so a client of yours that routes somewhere else
+  should point `baseURL` at where it actually sends.
 - **A redirect that changes origin is not followed.** `URLSession` follows redirects itself and
   replays the original request onto the target, stripping nothing — so without this, anything able
   to answer with a `302` could harvest your key. When the scheme, host or port changes, the SDK

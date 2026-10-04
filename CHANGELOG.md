@@ -9,6 +9,21 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.10.0] — 2026-10-04
+
+### Security
+
+- **A plaintext `baseURL` is refused for every `HTTPClient`, not only the SDK's own.** The check
+  lived in `URLSessionHTTPClient`, so a client you supplied (a pinned-session wrapper, a proxy
+  adapter) was handed the request, `x-api-key` included, for `http://anywhere`, while the
+  configuration said `allowsInsecureBaseURL = false`. The README promised otherwise. The pipeline
+  now checks before any client is called. The error is the same
+  (`AnthropicError.networkError` with `URLError.appTransportSecurityRequiresSecureConnection`),
+  thrown from the same call.
+
+  **If this breaks you:** you were sending your key in the clear to a non-loopback host. Use
+  https, or set `allowsInsecureBaseURL: true` to say so. Loopback still needs no opt-in.
+
 ## [0.9.0] — 2026-10-04
 
 ### Added
