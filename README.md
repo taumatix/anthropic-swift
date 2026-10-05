@@ -31,7 +31,7 @@ Supports the Messages, Batches, Models, Files and Skills APIs, and the Admin/Org
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/taumatix/anthropic-swift", from: "0.10.1"),
+    .package(url: "https://github.com/taumatix/anthropic-swift", from: "0.11.0"),
 ],
 targets: [
     .target(name: "MyApp", dependencies: [
@@ -276,6 +276,18 @@ let skill = try await client.skills.create(
     displayName: "Invoice parser"
 )
 print(skill.id, skill.displayName, skill.latestVersionId ?? "-")
+```
+
+A skill that lives on disk can be uploaded from its directory. `SkillFile.directory(at:)` reads every
+file under the directory's own name (`invoice-parser/SKILL.md`, `invoice-parser/scripts/…`),
+with MIME types from the extensions. It leaves out hidden files and symbolic links, and refuses a
+directory without a `SKILL.md` at its root:
+
+```swift
+let skill = try await client.skills.create(
+    files: try SkillFile.directory(at: URL(fileURLWithPath: "skills/invoice-parser")),
+    displayName: "Invoice parser"
+)
 ```
 
 Listing paginates by token. `Page` is an `AsyncSequence`, so iterating follows `next_page` for you

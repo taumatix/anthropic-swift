@@ -9,6 +9,17 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.11.0] — 2026-10-05
+
+### Added
+
+- **`SkillFile.directory(at:)`: create a skill from its directory.** Creating a skill meant
+  reading each file, guessing its MIME type and prefixing its path by hand. `directory(at:)` reads
+  every file under the directory's own name, sorted, with MIME types from the extensions. It
+  leaves out hidden files and symbolic links, so nothing outside the directory is uploaded, and
+  it refuses a directory without a `SKILL.md` at its root: a stricter check than `create` can
+  make from paths alone.
+
 ## [0.10.1] — 2026-10-05
 
 ### Fixed
