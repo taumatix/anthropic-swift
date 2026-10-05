@@ -5,7 +5,7 @@ import Foundation
 /// `path` is the file's location relative to the enclosing directory and is sent as the multipart
 /// filename. All files must sit under the same top-level directory, which must contain a `SKILL.md`
 /// at its root — see <https://platform.claude.com/docs/en/api/skills/create> (retrieved 2026-09-22).
-public struct SkillFile: Sendable, Equatable {
+public struct SkillFile: Sendable, Hashable, Codable {
     /// Path relative to the enclosing directory, e.g. `"my-skill/SKILL.md"`.
     public let path: String
     /// The file's bytes.

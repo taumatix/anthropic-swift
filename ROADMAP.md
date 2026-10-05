@@ -19,9 +19,6 @@ justifies a pass on its own.
 - **`AnthropicError.invalidRequest(String)`.** `create`'s validation failures are reported as
   `encodingError`, which makes a caller-input mistake look like a serialisation bug. Adding an enum
   case breaks exhaustive `switch`es, so it waits for a major.
-- **`SkillFile: Hashable, Codable`** and a public initializer for `SkillSource`. `AnthropicTestSupport`
-  is a shipped product, so users write tests against these types; `SkillSource` is `Decodable`-only
-  with no public init, and cannot be constructed in a caller's own test.
 - **Retire `list(limit:afterId:)` and `create(_:)`.** Both are deprecated and both hit endpoints
   that reject them. `let fn = client.skills.list` still binds to the deprecated overload, so the
   ambiguity only really goes away when it does.
