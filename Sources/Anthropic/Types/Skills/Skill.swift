@@ -4,7 +4,7 @@ import Foundation
 ///
 /// The `type` is modelled as a ``Kind`` for switching, with the raw string kept alongside it so a
 /// value Anthropic adds later decodes as ``Kind/unknown`` instead of failing the whole response.
-public struct SkillSource: Sendable, Decodable, Equatable {
+public struct SkillSource: Sendable, Codable, Hashable {
     /// The source values documented at
     /// <https://platform.claude.com/docs/en/api/skills/list> (retrieved 2026-09-22).
     ///
@@ -65,6 +65,13 @@ public struct SkillSource: Sendable, Decodable, Equatable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.type = Kind(rawValue: try container.decode(String.self, forKey: .type))
+    }
+
+    /// Encodes the shape the API sends, `{"type": "custom"}`, so a value round-trips through a
+    /// fixture or a cache. An ``Kind/unknown(_:)`` source keeps the string it was decoded from.
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(type.rawValue, forKey: .type)
     }
 }
 

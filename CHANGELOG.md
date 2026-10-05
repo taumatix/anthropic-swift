@@ -9,6 +9,15 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.12.0] — 2026-10-05
+
+### Added
+
+- **`SkillFile` is `Hashable` and `Codable`; `SkillSource` is `Hashable` and `Encodable`.** Both
+  are types callers use in their own tests, which need to compare, hash and store them like any
+  other value. `SkillSource` encodes the API's own shape, `{"type": "custom"}`, and an unknown
+  source keeps the string it was decoded from.
+
 ## [0.11.0] — 2026-10-05
 
 ### Added
