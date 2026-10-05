@@ -16,10 +16,6 @@ either way. If one does, the shape is a separate, opt-in total deadline, not a c
 Small, additive, and each one removes a class of caller mistake. Grouped because no one of them
 justifies a pass on its own.
 
-- **`SkillFile.directory(at:)`.** Creating a skill currently means reading each file, guessing a
-  MIME type, and hand-assembling the `"my-skill/SKILL.md"` prefix on every entry — the README
-  example is twelve lines of ceremony. A directory is the natural unit, and walking it is also what
-  makes the `SKILL.md`-present check meaningful rather than advisory.
 - **`AnthropicError.invalidRequest(String)`.** `create`'s validation failures are reported as
   `encodingError`, which makes a caller-input mistake look like a serialisation bug. Adding an enum
   case breaks exhaustive `switch`es, so it waits for a major.

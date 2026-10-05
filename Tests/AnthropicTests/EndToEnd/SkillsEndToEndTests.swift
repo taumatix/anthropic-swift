@@ -148,6 +148,26 @@ final class SkillsEndToEndTests: XCTestCase {
         XCTAssertTrue(body.contains("name=\"display_name\""), body)
     }
 
+    /// A skill created straight from its directory sends every file under the directory's name.
+    func testCreateFromADirectoryOverARealSocket() async throws {
+        let client = try await startClient { _ in .json(200, MockResponses.skillObject) }
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathComponent("from-disk")
+        try FileManager.default.createDirectory(at: dir.appendingPathComponent("scripts"), withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir.deletingLastPathComponent()) }
+        try Data("---\nname: from-disk\ndescription: read from disk\n---\n".utf8).write(to: dir.appendingPathComponent("SKILL.md"))
+        try Data("echo hi\n".utf8).write(to: dir.appendingPathComponent("scripts/run.sh"))
+
+        _ = try await client.skills.create(files: try SkillFile.directory(at: dir))
+
+        let body = String(decoding: try XCTUnwrap(server.receivedRequests.first).body, as: UTF8.self)
+        XCTAssertTrue(body.contains("filename=\"from-disk/SKILL.md\""), body)
+        XCTAssertTrue(body.contains("filename=\"from-disk/scripts/run.sh\""), body)
+        XCTAssertTrue(body.contains("description: read from disk"), body)
+        XCTAssertTrue(body.contains("Content-Type: text/markdown"), body)
+    }
+
     /// A file set with no `SKILL.md` must be rejected before anything reaches the network.
     func testInvalidFileSetNeverReachesTheSocket() async throws {
         let client = try await startClient { _ in .json(200, MockResponses.skillObject) }
