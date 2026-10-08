@@ -18,13 +18,14 @@ API you are calling.
 - name: files-api-beta
   kind: literal
   value: "files-api-2025-04-14"
-  checked: 2026-10-05
-  note: >-
-    anthropic-beta header sent by FilesService. STALE: the Files API left beta. The
-    header is now optional and requests that send it keep the beta response shapes,
-    so nothing is broken — but list stays on has_more/first_id/last_id with
-    before_id/after_id cursors and expires_at is never returned. Migrating is a
-    ROADMAP entry.
+  checked: 2026-10-09
+  hold: >-
+    RETIRED FROM USE, not stale. FilesService no longer sends this header: with it the
+    server keeps the superseded {data, has_more, first_id, last_id} envelope and ignores
+    the page token, so token pagination cannot work under it. Types follow the GA
+    bodies documented 2026-10-09 (retrieve_metadata, list, upload, delete). NOT yet
+    verified against the live API (needs a key); a ROADMAP entry covers it. Restore the
+    header with ClientOptions.additionalHeaders if the live check shows a divergence.
 
 - name: skills-api-beta
   kind: literal
@@ -115,8 +116,13 @@ came from.
 Still open: skill **versions**. `latest_version_id` points at a sub-resource this SDK does not
 model, so a version id cannot be resolved. That is a `ROADMAP.md` entry.
 
-The *Files* migration remains a `ROADMAP.md` entry. It is the benign one, and the cursor work
-landed here is most of what it needs.
+*Files* — **migrated on 2026-10-09** on the same footing as Skills: `FilesService` sends no
+`anthropic-beta` header, `FileObject` decodes the documented `FileMetadata` body, `upload` takes
+`expires_in_seconds`, and `list` follows `next_page`. The old `FileObject` could not decode that
+body at all (`created_at` is a string, not an integer, and there is no `purpose`), and
+`FileDeleteResponse` required a `deleted` field the delete body lacks, so the "benign" framing
+above was wrong for the same reason the Skills one was: the header never protected a shape this SDK
+had invented. Verified against the docs only; the live check is on the roadmap.
 
 **The documentation moved hosts.** `docs.anthropic.com/en/...` now 301s to
 `platform.claude.com/docs/en/...`. Links here and in the README use the new host; an old link still

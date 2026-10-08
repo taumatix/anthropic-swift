@@ -61,26 +61,22 @@ every server-side tool result, then the same failure one level up in system subt
 per type is a judgement about how to add a field without breaking a public struct. It is also the
 kind of work that goes stale if done as one sweep and never repeated.
 
-**Shape:** one service at a time, ordered by blast radius — `FilesService` first, since it has the
-same beta-header history. Per service: read the vendor's `Response (200)` bodies, add a decoding
+**Shape:** one service at a time, ordered by blast radius — `FilesService` is done (2026-10-09), so
+`MessageBatch` is next. Per service: read the vendor's `Response (200)` bodies, add a decoding
 test asserting those literal bodies with the page cited, and fix what fails. Admin last; it is the
-least used. The Files entry below folds into the first slice.
+least used.
 
-## Migrate `FilesService` off `files-api-2025-04-14`
+## Files: the rest of the migration
 
-**Today:** the Files API left beta too, but this one is benign — the header is optional and a
-request that still sends it keeps the beta shapes. Nothing fails; surface is missing:
+**Today:** `FilesService` decodes the documented bodies, uploads with `expiresInSeconds` and pages by
+token, without the beta header (2026-10-09 pass). Still open:
 
-- no `expires_at` on a file object (it is only returned without the header), so a caller cannot see
-  when an uploaded file expires,
-- no `expires_in_seconds` at upload, so expiry cannot be set at all,
-- `before_id`/`after_id` instead of `page`/`next_page`, and no `ids[]` batch lookup,
-- `Content-Type` still mandatory on the upload part.
-
-Anthropic documents the migration explicitly
-(<https://platform.claude.com/docs/en/build-with-claude/files>, "Migrate from
-`files-api-2025-04-14`"), which makes this mostly mechanical — and shares the cursor problem with
-the Skills entry above, so do that one first and reuse the answer.
+- no `ids[]` batch lookup on list (documented: at most 100, exclusive with `page` and `limit`),
+- the service now sends no beta header on the strength of the docs alone; the live API has not
+  confirmed it returns the GA bodies (needs a key),
+- the upload part's `Content-Type` is still always sent, though the docs no longer require it,
+- nothing exercises `FilesService` against the real API; add `LiveFilesTests` (gated on
+  `ANTHROPIC_API_KEY`) for upload, expiry round trip and delete.
 
 ## A test that catches a retired wire contract
 

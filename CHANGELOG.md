@@ -9,7 +9,26 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Fixed
+
+- **`client.files` could not decode a documented response.** `FileObject` expected an integer
+  `created_at`, `size` and `purpose`; the documented `FileMetadata` body has an RFC 3339
+  `created_at`, `size_bytes` and no `purpose`, so `upload`, `get` and `list` threw on a real
+  response. `FileDeleteResponse` required a `deleted` field the documented `{"id","type":"file_deleted"}`
+  body does not carry, so `delete` threw after deleting. Both now decode the documented bodies
+  (<https://platform.claude.com/docs/en/api/files/retrieve_metadata>, retrieved 2026-10-09) and
+  still decode the old shape. `FilesService` no longer sends `anthropic-beta: files-api-2025-04-14`,
+  under which the server ignores the `page` token; set it through `ClientOptions.additionalHeaders`
+  to get the beta shapes. Checked against the docs, not yet against the live API. `createdAt` stays an `Int` (Unix seconds); the string the API sent is
+  in `createdAtString`. `purpose` is deprecated and empty. File ids are percent-encoded in paths.
+  The README upload example, which called an `upload(FileUploadRequest)` that does not exist, now
+  shows the real signature.
+
 ### Added
+
+- **Files: `expiresInSeconds` at upload, `mimeType`/`downloadable`/`expiresAt` on `FileObject`,
+  and token pagination.** `list(limit:pageToken:)` follows `next_page`; the id-cursor
+  `list(limit:afterId:beforeId:)` is deprecated and stops after one page.
 
 - **`client.skills.versions`: read a skill's versions.** `list(skillID:limit:pageToken:)` pages
   through `GET /v1/skills/{skill_id}/versions` and `get(skillID:version:)` fetches one, so a caller
