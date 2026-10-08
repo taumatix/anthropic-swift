@@ -31,6 +31,23 @@ final class LiveSkillsTests: IntegrationTestCase {
                       "unrecognised source '\(source.rawType)' — the API has added a value")
     }
 
+    /// A skill's `latest` version resolves, is the version `latest_version_id` names, and the list
+    /// of versions contains it.
+    func testLatestVersionResolvesAndIsListed() async throws {
+        let page = try await client.skills.list(limit: 1)
+        guard let skill = page.data.first, let latestId = skill.latestVersionId else {
+            throw XCTSkip("No skills in this workspace, so versions cannot be checked.")
+        }
+
+        let latest = try await client.skills.versions.get(skillID: skill.id, version: .latest)
+        XCTAssertEqual(latest.type, "skill_version")
+        XCTAssertEqual(latest.skillId, skill.id)
+        XCTAssertEqual(latest.id, latestId)
+
+        let versions = try await client.skills.versions.list(skillID: skill.id, limit: 100)
+        XCTAssertTrue(versions.data.contains { $0.id == latestId })
+    }
+
     /// Whether `skills-2025-10-02` is still honoured, and whether it changes the response.
     ///
     /// The documentation says it should not: the beta and GA reference pages describe the same

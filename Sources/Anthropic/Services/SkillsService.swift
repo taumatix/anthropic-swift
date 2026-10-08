@@ -41,8 +41,13 @@ public struct SkillFile: Sendable, Hashable, Codable {
 public final class SkillsService: Sendable {
     private let pipeline: RequestPipeline
 
+    /// The versions of a skill: ``SkillVersionsService/list(skillID:limit:pageToken:)`` and
+    /// ``SkillVersionsService/get(skillID:version:)``.
+    public let versions: SkillVersionsService
+
     init(pipeline: RequestPipeline) {
         self.pipeline = pipeline
+        self.versions = SkillVersionsService(pipeline: pipeline)
     }
 
     // MARK: - Create
