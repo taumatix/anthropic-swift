@@ -10,6 +10,10 @@ public final class BatchesService: Sendable {
         self.pipeline = pipeline
     }
 
+    private func encoded(_ id: String) -> String {
+        id.addingPercentEncoding(withAllowedCharacters: .anthropicPathComponent) ?? id
+    }
+
     // MARK: - Create
 
     /// Creates a new message batch.
@@ -27,7 +31,7 @@ public final class BatchesService: Sendable {
     ///
     /// - Parameter id: The batch identifier.
     public func get(id: String) async throws -> MessageBatch {
-        let request = HTTPRequest(method: "GET", path: "/v1/messages/batches/\(id)")
+        let request = HTTPRequest(method: "GET", path: "/v1/messages/batches/\(encoded(id))")
         return try await pipeline.send(request)
     }
 
@@ -49,7 +53,7 @@ public final class BatchesService: Sendable {
     ///
     /// - Parameter id: The batch identifier.
     public func cancel(id: String) async throws -> MessageBatch {
-        let request = HTTPRequest(method: "POST", path: "/v1/messages/batches/\(id)/cancel")
+        let request = HTTPRequest(method: "POST", path: "/v1/messages/batches/\(encoded(id))/cancel")
         return try await pipeline.send(request)
     }
 
@@ -59,7 +63,7 @@ public final class BatchesService: Sendable {
     ///
     /// - Parameter id: The batch identifier.
     public func delete(id: String) async throws -> BatchDeleteResponse {
-        let request = HTTPRequest(method: "DELETE", path: "/v1/messages/batches/\(id)")
+        let request = HTTPRequest(method: "DELETE", path: "/v1/messages/batches/\(encoded(id))")
         return try await pipeline.send(request)
     }
 
@@ -80,7 +84,7 @@ public final class BatchesService: Sendable {
     /// }
     /// ```
     public func results(id: String) -> AsyncThrowingStream<BatchResult, Error> {
-        let request = HTTPRequest(method: "GET", path: "/v1/messages/batches/\(id)/results")
+        let request = HTTPRequest(method: "GET", path: "/v1/messages/batches/\(encoded(id))/results")
         let dataStream = pipeline.stream(request)
 
         return AsyncThrowingStream { continuation in

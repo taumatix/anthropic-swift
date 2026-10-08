@@ -257,3 +257,7 @@ moved:
   only deprecated public model, retiring 2026-11-30. `claude-haiku-4-5-20251001` is still Active
   with no deprecation announced, ten days before its "not sooner than October 15, 2026" date.
 - `anthropics/anthropic-sdk-python`: v1.11.0 is still the latest release.
+- <https://platform.claude.com/docs/en/api/messages/batches/retrieve>, `/list` and `/results`
+  (2026-10-09): `MessageBatch`, the list envelope and the four result outcomes match the documented
+  bodies, except `archived_at`, now added. The `errored` outcome nests `error.error.{type,message}`
+  as `APIError` already did.
