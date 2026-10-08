@@ -388,6 +388,35 @@ public enum MockResponses {
     }
     """.utf8)
 
+    /// <https://platform.claude.com/docs/en/api/skills/versions/retrieve>, retrieved 2026-10-09.
+    public static let skillVersionObject = Data("""
+    {
+      "id": "id",
+      "created_at": "2024-10-30T23:58:27.427722Z",
+      "description": "description",
+      "name": "name",
+      "skill_id": "skill_01JAbcdefghijklmnopqrstuvw",
+      "type": "skill_version"
+    }
+    """.utf8)
+
+    /// <https://platform.claude.com/docs/en/api/skills/versions/list>, retrieved 2026-10-09.
+    public static let skillVersionList = Data("""
+    {
+      "data": [
+        {
+          "id": "id",
+          "created_at": "2024-10-30T23:58:27.427722Z",
+          "description": "description",
+          "name": "name",
+          "skill_id": "skill_01JAbcdefghijklmnopqrstuvw",
+          "type": "skill_version"
+        }
+      ],
+      "next_page": "next_page"
+    }
+    """.utf8)
+
     /// <https://platform.claude.com/docs/en/api/skills/delete>
     public static let skillDeleted = Data("""
     {

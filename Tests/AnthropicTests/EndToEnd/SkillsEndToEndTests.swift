@@ -35,6 +35,30 @@ final class SkillsEndToEndTests: XCTestCase {
         )
     }
 
+    // MARK: - Versions
+
+    func testVersionsAreReachedOverARealSocket() async throws {
+        let client = try await startClient { request in
+            request.path.hasSuffix("/versions")
+                ? .json(200, MockResponses.skillVersionList)
+                : .json(200, MockResponses.skillVersionObject)
+        }
+
+        let latest = try await client.skills.versions.get(skillID: "skill_01", version: .latest)
+        XCTAssertEqual(latest.type, "skill_version")
+        XCTAssertEqual(latest.name, "name")
+
+        let page = try await client.skills.versions.list(skillID: "skill_01", limit: 5)
+        XCTAssertEqual(page.data.map(\.skillId), ["skill_01JAbcdefghijklmnopqrstuvw"])
+        XCTAssertEqual(page.nextPageToken, "next_page")
+
+        XCTAssertEqual(server.receivedRequests.map(\.path),
+                       ["/v1/skills/skill_01/versions/latest", "/v1/skills/skill_01/versions"])
+        XCTAssertEqual(server.receivedRequests[1].query["limit"], "5")
+        XCTAssertEqual(server.receivedRequests[0].headers["x-api-key"], "test-key")
+        XCTAssertNil(server.receivedRequests[0].headers["anthropic-beta"])
+    }
+
     // MARK: - List
 
     func testListDecodesTheDocumentedBodyOverARealSocket() async throws {

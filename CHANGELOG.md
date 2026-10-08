@@ -9,6 +9,16 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- **`client.skills.versions`: read a skill's versions.** `list(skillID:limit:pageToken:)` pages
+  through `GET /v1/skills/{skill_id}/versions` and `get(skillID:version:)` fetches one, so a caller
+  can resolve `Skill.latestVersionId` or pin a reference to a version without leaving the SDK.
+  `SkillVersion` is decoded from the published `Response (200)` body. `SkillVersionReference` makes
+  the API's `latest` expressible (`.latest`, or the string literal `"latest"`) next to `.id(_:)`.
+  Additive; no existing signature changed. Speaks the GA form: requests carrying
+  `skills-2025-10-02` address versions by epoch timestamp, which is not modelled.
+
 ## [0.12.0] — 2026-10-05
 
 ### Added

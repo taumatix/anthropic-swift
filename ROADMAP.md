@@ -23,24 +23,27 @@ justifies a pass on its own.
   that reject them. `let fn = client.skills.list` still binds to the deprecated overload, so the
   ambiguity only really goes away when it does.
 
-## Model the Skill versions sub-resource
+## Create and delete a skill version
 
-**Today:** `Skill.latestVersionId` is an id this SDK cannot resolve. `GET
-/v1/skills/{skill_id}/versions/{version}` and its list sibling exist — `version` accepts a version
-id or the literal `latest` — and nothing here reaches them. A caller who wants the SKILL.md a skill
-is actually running, or wants to pin a reference to a version rather than to `latest`, has to drop
-out of the SDK and use `URLSession` directly.
+**Today:** a caller can read versions (`client.skills.versions`, 0.13.0 pending) but not upload a
+new one or remove one; both mean dropping out of the SDK. The reference pages for
+`POST /v1/skills/{skill_id}/versions` and `DELETE .../versions/{version}` have not been read yet, so
+their bodies and the delete response are unknown. Upload reuses `SkillFile` and the multipart code
+from `create(files:)`.
 
-This is left over from the GA migration that shipped on 2026-09-22; that entry covered the skill
-object and the endpoints that return it, and deliberately stopped at versions.
+**Shape:** read both pages, write the literal bodies into `MockResponses`, then add `create` and
+`delete` on `SkillVersionsService`, with a gated live round trip next to `testCreateGetDeleteRoundTrip`.
 
-**Why it is not simply done:** the version object's fields have not been read yet, only its
-existence. `SkillVersion` must be written from the reference pages the way `Skill` was — against
-the published `Response (200)` body, not from the shape of `Skill`.
+## Skill versions are not checked against the real API
 
-**Shape:** `SkillVersion`, `client.skills.versions.list(skillID:)` and `get(skillID:version:)`,
-with `version` a type that makes `latest` expressible rather than a bare `String`. Tests assert the
-documented body and cite the page; the live round trip extends `LiveSkillsTests`.
+**Today:** `LiveSkillsTests.testLatestVersionResolvesAndIsListed` exists and skips without
+`ANTHROPIC_API_KEY`; no pass has run it, so `SkillVersion` is proven against the published body only,
+the exact gap that kept `Skill` wrong for six months. Whether `name`/`description` are always present
+(they decode as optional) is unconfirmed.
+
+**Shape:** run it with a key and tighten the types to what the API serves. The beta form
+(`skills-2025-10-02`, versions addressed by epoch timestamp) is deliberately not modelled; add it only
+if a caller on that header asks.
 
 ## Sweep the other services for invented wire shapes
 
