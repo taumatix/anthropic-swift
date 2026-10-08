@@ -10,10 +10,10 @@ Supports the Messages, Batches, Models, Files and Skills APIs, and the Admin/Org
 >   field the API has never returned, so every `client.skills` call failed; if you are on `0.2.0`
 >   or earlier, Skills does not work at all. `Skill.name` still compiles, deprecated, and now
 >   returns `displayName`.
-> - **Files still sends `files-api-2025-04-14`**, checked 2026-09-26. The header is optional now and
->   sending it keeps the old response shapes, so the cost is missing surface: no `expires_at` on a
->   file, no `expires_in_seconds` at upload, and the superseded `before_id`/`after_id` cursor
->   instead of `page`/`next_page`. Migrating it is the next roadmap entry of its kind.
+> - **Files still sends `files-api-2025-04-14`**, checked 2026-10-09. The header is optional now and
+>   sending it is harmless; `FileObject` decodes the documented `FileMetadata` body (it could not
+>   before: `created_at` is an RFC 3339 string, not an integer), `upload` takes `expiresInSeconds`,
+>   and `list` pages by `page`/`next_page`.
 >
 > See [UPSTREAM.md](UPSTREAM.md) for the shape-by-shape diff and what was verified when, and
 > [ROADMAP.md](ROADMAP.md) for the order.
@@ -231,7 +231,8 @@ for try await result in client.batches.results(id: current.id) {
 // Upload a file
 let data = try Data(contentsOf: URL(fileURLWithPath: "document.pdf"))
 let file = try await client.files.upload(
-    FileUploadRequest(filename: "document.pdf", mimeType: "application/pdf", data: data)
+    content: data, filename: "document.pdf", mimeType: "application/pdf",
+    expiresInSeconds: 86_400  // optional: 3600...7776000
 )
 
 // Use the file in a message

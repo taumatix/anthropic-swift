@@ -149,40 +149,47 @@ public enum MockResponses {
 
     // MARK: - Files
 
+    /// The `Response (200)` body of
+    /// <https://platform.claude.com/docs/en/api/files/retrieve_metadata> (retrieved 2026-10-09).
     public static let fileObject = Data("""
     {
-      "id": "file_011CNmFNMT7RRHzqSCnmPwH7",
+      "id": "file_011CNha8iCJcU1wXNR6q4V8w",
+      "created_at": "2025-04-15T18:37:24.100435Z",
+      "filename": "document.pdf",
+      "mime_type": "application/pdf",
+      "size_bytes": 102400,
       "type": "file",
-      "filename": "annual_report.pdf",
-      "size": 4096,
-      "created_at": 1714041600,
-      "purpose": "assistants"
+      "downloadable": false,
+      "expires_at": "2025-05-15T18:37:24.100435Z"
     }
     """.utf8)
 
+    /// A list envelope: `data` of `FileMetadata` plus `next_page`, per
+    /// <https://platform.claude.com/docs/en/api/files/list> (retrieved 2026-10-09).
     public static let filesList = Data("""
     {
       "data": [
         {
-          "id": "file_011CNmFNMT7RRHzqSCnmPwH7",
+          "id": "file_011CNha8iCJcU1wXNR6q4V8w",
+          "created_at": "2025-04-15T18:37:24.100435Z",
+          "filename": "document.pdf",
+          "mime_type": "application/pdf",
+          "size_bytes": 102400,
           "type": "file",
-          "filename": "annual_report.pdf",
-          "size": 4096,
-          "created_at": 1714041600,
-          "purpose": "assistants"
+          "downloadable": false,
+          "expires_at": "2025-05-15T18:37:24.100435Z"
         }
       ],
-      "has_more": false,
-      "first_id": "file_011CNmFNMT7RRHzqSCnmPwH7",
-      "last_id": "file_011CNmFNMT7RRHzqSCnmPwH7"
+      "next_page": "page_MjAyNS0wNS0xNFQwMDowMDowMFo="
     }
     """.utf8)
 
+    /// The `Response (200)` body of <https://platform.claude.com/docs/en/api/files/delete>
+    /// (retrieved 2026-10-09).
     public static let fileDeleted = Data("""
     {
-      "id": "file_011CNmFNMT7RRHzqSCnmPwH7",
-      "type": "file_deleted",
-      "deleted": true
+      "id": "file_011CNha8iCJcU1wXNR6q4V8w",
+      "type": "file_deleted"
     }
     """.utf8)
 
