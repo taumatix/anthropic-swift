@@ -9,6 +9,15 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- **`ModelInfo` carries the rest of the documented model object**
+  (<https://platform.claude.com/docs/en/api/models>, retrieved 2026-10-09): `capabilities`
+  (`ModelCapabilities`, with `CapabilitySupport` leaves), `lifecycle`, `line`, `deprecatedAt`,
+  `retiresAt`, `maxInputTokens` and `maxTokens`. All are optional, so bodies without them still
+  decode. `lifecycle` and `line` are `String`s because the page says more values may be added.
+  `models.get(id:)` percent-encodes the id.
+
 ### Fixed
 
 - **`MessageBatch` dropped `archived_at`.** The documented batch body

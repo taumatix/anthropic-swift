@@ -261,3 +261,9 @@ moved:
   (2026-10-09): `MessageBatch`, the list envelope and the four result outcomes match the documented
   bodies, except `archived_at`, now added. The `errored` outcome nests `error.error.{type,message}`
   as `APIError` already did.
+
+## Models API (checked 2026-10-09)
+
+`ModelInfo` follows <https://platform.claude.com/docs/en/api/models> (list and get `Response (200)`
+bodies, retrieved 2026-10-09). Not confirmed against the live API (no key). The `lifecycle` list
+filter is not implemented.

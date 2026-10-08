@@ -68,10 +68,21 @@ outcome kind as a cancellation; changing it is a behaviour change, so it needs a
 case (additive for callers who `switch` with `default`, breaking for exhaustive ones — a minor-bump
 decision), and `BatchCreateRequest` has not been checked against the create page's request body.
 
-**Shape:** one service at a time, ordered by blast radius — `FilesService` and Batches are done
-(2026-10-09), so `ModelInfo` is next, then the Admin types. Per service: read the vendor's `Response (200)` bodies, add a decoding
+**Shape:** one service at a time, ordered by blast radius — `FilesService`, Batches and `ModelInfo` are
+done (2026-10-09), so the Admin types are next. Per service: read the vendor's `Response (200)` bodies, add a decoding
 test asserting those literal bodies with the page cited, and fix what fails. Admin last; it is the
 least used.
+
+## Models: the `lifecycle` filter and the live check
+
+**Today:** `ModelInfo` decodes the documented body (2026-10-09), but `models.list` has no `lifecycle`
+filter (`active`, `deprecated`, `retired`, up to 3). By default retired models are absent, so a caller
+cannot list them. The page does not say how an array query parameter is serialised, so the filter waits
+for a live call that shows it. `ModelsService`'s next-page fetcher also drops `limit`.
+
+**Shape:** with a key, call `/v1/models?lifecycle=...` both ways, keep the one that filters, add
+`lifecycle: [String]? = nil` and carry it through the next-page fetcher. Add `LiveModelsTests` gated on
+`ANTHROPIC_API_KEY` to confirm the `ModelInfo` fields against the real body.
 
 ## Files: the rest of the migration
 

@@ -32,7 +32,8 @@ public final class ModelsService: Sendable {
     ///
     /// - Parameter id: The model identifier (e.g., `"claude-opus-4-5"`).
     public func get(id: String) async throws -> ModelInfo {
-        let request = HTTPRequest(method: "GET", path: "/v1/models/\(id)")
+        let encoded = id.addingPercentEncoding(withAllowedCharacters: .anthropicPathComponent) ?? id
+        let request = HTTPRequest(method: "GET", path: "/v1/models/\(encoded)")
         return try await pipeline.send(request)
     }
 
