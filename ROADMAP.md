@@ -61,8 +61,15 @@ every server-side tool result, then the same failure one level up in system subt
 per type is a judgement about how to add a field without breaking a public struct. It is also the
 kind of work that goes stale if done as one sweep and never repeated.
 
-**Shape:** one service at a time, ordered by blast radius — `FilesService` is done (2026-10-09), so
-`MessageBatch` is next. Per service: read the vendor's `Response (200)` bodies, add a decoding
+Batches (2026-10-09) turned out close to right: only `archived_at` was missing, and ids were not
+percent-encoded. The rest of the outcome shapes matched the documented ones. Left over from it:
+`BatchResultOutcome` decodes an unrecognised `result.type` as `.canceled`, which would hide a new
+outcome kind as a cancellation; changing it is a behaviour change, so it needs an `.unknown(type:)`
+case (additive for callers who `switch` with `default`, breaking for exhaustive ones — a minor-bump
+decision), and `BatchCreateRequest` has not been checked against the create page's request body.
+
+**Shape:** one service at a time, ordered by blast radius — `FilesService` and Batches are done
+(2026-10-09), so `ModelInfo` is next, then the Admin types. Per service: read the vendor's `Response (200)` bodies, add a decoding
 test asserting those literal bodies with the page cited, and fix what fails. Admin last; it is the
 least used.
 

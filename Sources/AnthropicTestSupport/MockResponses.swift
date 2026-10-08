@@ -100,50 +100,56 @@ public enum MockResponses {
 
     // MARK: - Batches
 
+    /// The `Response (200)` body of
+    /// <https://platform.claude.com/docs/en/api/messages/batches/retrieve> (retrieved 2026-10-09).
     public static let messageBatch = Data("""
     {
-      "id": "msgbatch_01HkcTjaV5uDC8jWR4ZsDV8d",
-      "type": "message_batch",
+      "id": "msgbatch_013Zva2CMHLNnXjNJJKqJ2EF",
+      "archived_at": "2024-08-20T18:37:24.100435Z",
+      "cancel_initiated_at": "2024-08-20T18:37:24.100435Z",
+      "created_at": "2024-08-20T18:37:24.100435Z",
+      "ended_at": "2024-08-20T18:37:24.100435Z",
+      "expires_at": "2024-08-20T18:37:24.100435Z",
       "processing_status": "in_progress",
       "request_counts": {
+        "canceled": 10,
+        "errored": 30,
+        "expired": 10,
         "processing": 100,
-        "succeeded": 0,
-        "errored": 0,
-        "canceled": 0,
-        "expired": 0
+        "succeeded": 50
       },
-      "ended_at": null,
-      "created_at": "2024-09-24T18:37:24.100435Z",
-      "expires_at": "2024-09-25T18:37:24.100435Z",
-      "cancel_initiated_at": null,
-      "results_url": null
+      "results_url": "https://api.anthropic.com/v1/messages/batches/msgbatch_013Zva2CMHLNnXjNJJKqJ2EF/results",
+      "type": "message_batch"
     }
     """.utf8)
 
+    /// The `Response (200)` body of
+    /// <https://platform.claude.com/docs/en/api/messages/batches/list> (retrieved 2026-10-09).
     public static let messageBatchList = Data("""
     {
       "data": [
         {
-          "id": "msgbatch_01HkcTjaV5uDC8jWR4ZsDV8d",
-          "type": "message_batch",
-          "processing_status": "ended",
+          "id": "msgbatch_013Zva2CMHLNnXjNJJKqJ2EF",
+          "archived_at": "2024-08-20T18:37:24.100435Z",
+          "cancel_initiated_at": "2024-08-20T18:37:24.100435Z",
+          "created_at": "2024-08-20T18:37:24.100435Z",
+          "ended_at": "2024-08-20T18:37:24.100435Z",
+          "expires_at": "2024-08-20T18:37:24.100435Z",
+          "processing_status": "in_progress",
           "request_counts": {
-            "processing": 0,
-            "succeeded": 50,
-            "errored": 0,
-            "canceled": 0,
-            "expired": 0
+            "canceled": 10,
+            "errored": 30,
+            "expired": 10,
+            "processing": 100,
+            "succeeded": 50
           },
-          "ended_at": "2024-09-24T19:37:24.100435Z",
-          "created_at": "2024-09-24T18:37:24.100435Z",
-          "expires_at": "2024-09-25T18:37:24.100435Z",
-          "cancel_initiated_at": null,
-          "results_url": "https://api.anthropic.com/v1/messages/batches/msgbatch_01HkcTjaV5uDC8jWR4ZsDV8d/results"
+          "results_url": "https://api.anthropic.com/v1/messages/batches/msgbatch_013Zva2CMHLNnXjNJJKqJ2EF/results",
+          "type": "message_batch"
         }
       ],
-      "has_more": false,
-      "first_id": "msgbatch_01HkcTjaV5uDC8jWR4ZsDV8d",
-      "last_id": "msgbatch_01HkcTjaV5uDC8jWR4ZsDV8d"
+      "first_id": "first_id",
+      "has_more": true,
+      "last_id": "last_id"
     }
     """.utf8)
 

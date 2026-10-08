@@ -11,6 +11,8 @@ public struct MessageBatch: Sendable, Decodable, Equatable {
     public let expiresAt: String
     public let cancelInitiatedAt: String?
     public let resultsUrl: String?
+    /// When the batch was archived and its results became unavailable; `nil` until then.
+    public let archivedAt: String?
 }
 
 public struct BatchRequestCounts: Sendable, Decodable, Equatable {

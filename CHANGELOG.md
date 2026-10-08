@@ -11,6 +11,12 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
+- **`MessageBatch` dropped `archived_at`.** The documented batch body
+  (<https://platform.claude.com/docs/en/api/messages/batches/retrieve>, retrieved 2026-10-09)
+  carries it; it is now `MessageBatch.archivedAt` (`nil` until the batch is archived), and bodies
+  without it still decode. Batch ids are percent-encoded in paths. The batch test fixtures are now the
+  literal documented bodies.
+
 - **`client.files` could not decode a documented response.** `FileObject` expected an integer
   `created_at`, `size` and `purpose`; the documented `FileMetadata` body has an RFC 3339
   `created_at`, `size_bytes` and no `purpose`, so `upload`, `get` and `list` threw on a real
