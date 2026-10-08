@@ -67,21 +67,72 @@ public enum MockResponses {
 
     // MARK: - Models
 
+    /// The `Response (200)` bodies of <https://platform.claude.com/docs/en/api/models> (retrieved
+    /// 2026-10-09), verbatim apart from whitespace. The values are the page's placeholders.
     public static let modelsList = Data("""
     {
       "data": [
         {
-          "type": "model",
-          "id": "claude-opus-4-5",
-          "display_name": "Claude Opus 4.5",
-          "created_at": "2025-01-01T00:00:00Z"
+      "id": "claude-opus-5",
+      "capabilities": {
+        "batch": {"supported": true},
+        "citations": {"supported": true},
+        "code_execution": {"supported": true},
+        "context_management": {
+          "clear_thinking_20251015": {"supported": true},
+          "clear_tool_uses_20250919": {"supported": true},
+          "compact_20260112": {"supported": true},
+          "supported": true
         },
-        {
-          "type": "model",
-          "id": "claude-sonnet-4-5",
-          "display_name": "Claude Sonnet 4.5",
-          "created_at": "2025-01-01T00:00:00Z"
+        "effort": {
+          "high": {"supported": true},
+          "low": {"supported": true},
+          "max": {"supported": true},
+          "medium": {"supported": true},
+          "supported": true,
+          "xhigh": {"supported": true}
+        },
+        "image_input": {"supported": true},
+        "pdf_input": {"supported": true},
+        "server_tools": {
+          "code_execution": {"supported": true},
+          "supported": true,
+          "web_search": {"supported": true}
+        },
+        "structured_outputs": {"supported": true},
+        "thinking": {
+          "supported": true,
+          "types": {
+            "adaptive": {"supported": true},
+            "disabled": {"supported": true},
+            "enabled": {"supported": true}
+          }
         }
+      },
+      "created_at": "2026-07-24T00:00:00Z",
+      "deprecated_at": "2019-12-27T18:11:19.117Z",
+      "display_name": "Claude Opus 5",
+      "lifecycle": "active",
+      "line": "haiku",
+      "max_input_tokens": 0,
+      "max_tokens": 0,
+      "retires_at": "2019-12-27T18:11:19.117Z",
+      "type": "model"
+    }
+      ],
+      "first_id": "first_id",
+      "has_more": true,
+      "last_id": "last_id"
+    }
+    """.utf8)
+
+    /// The pre-2026-10 shape this package modelled before checking the page: no capabilities,
+    /// lifecycle, line or token limits. Kept so those bodies stay decodable.
+    public static let modelsListLegacy = Data("""
+    {
+      "data": [
+        {"type": "model", "id": "claude-opus-4-5", "display_name": "Claude Opus 4.5", "created_at": "2025-01-01T00:00:00Z"},
+        {"type": "model", "id": "claude-sonnet-4-5", "display_name": "Claude Sonnet 4.5", "created_at": "2025-01-01T00:00:00Z"}
       ],
       "has_more": false,
       "first_id": "claude-opus-4-5",
@@ -91,10 +142,51 @@ public enum MockResponses {
 
     public static let singleModel = Data("""
     {
-      "type": "model",
-      "id": "claude-opus-4-5",
-      "display_name": "Claude Opus 4.5",
-      "created_at": "2025-01-01T00:00:00Z"
+      "id": "claude-opus-5",
+      "capabilities": {
+        "batch": {"supported": true},
+        "citations": {"supported": true},
+        "code_execution": {"supported": true},
+        "context_management": {
+          "clear_thinking_20251015": {"supported": true},
+          "clear_tool_uses_20250919": {"supported": true},
+          "compact_20260112": {"supported": true},
+          "supported": true
+        },
+        "effort": {
+          "high": {"supported": true},
+          "low": {"supported": true},
+          "max": {"supported": true},
+          "medium": {"supported": true},
+          "supported": true,
+          "xhigh": {"supported": true}
+        },
+        "image_input": {"supported": true},
+        "pdf_input": {"supported": true},
+        "server_tools": {
+          "code_execution": {"supported": true},
+          "supported": true,
+          "web_search": {"supported": true}
+        },
+        "structured_outputs": {"supported": true},
+        "thinking": {
+          "supported": true,
+          "types": {
+            "adaptive": {"supported": true},
+            "disabled": {"supported": true},
+            "enabled": {"supported": true}
+          }
+        }
+      },
+      "created_at": "2026-07-24T00:00:00Z",
+      "deprecated_at": "2019-12-27T18:11:19.117Z",
+      "display_name": "Claude Opus 5",
+      "lifecycle": "active",
+      "line": "haiku",
+      "max_input_tokens": 0,
+      "max_tokens": 0,
+      "retires_at": "2019-12-27T18:11:19.117Z",
+      "type": "model"
     }
     """.utf8)
 
