@@ -62,6 +62,20 @@ public final class FilesService: Sendable {
         return attachFetcher(to: page, limit: limit)
     }
 
+    /// Looks up several files by id in one request.
+    ///
+    /// The API accepts at most 100 ids and does not combine them with paging, so the result is a
+    /// single page; ids that match no file are absent from it. More than 100 ids are passed through
+    /// and rejected by the server.
+    ///
+    /// - Parameter ids: The file identifiers to look up. An empty array sends the plain list request.
+    public func list(ids: [String]) async throws -> Page<FileObject> {
+        var request = HTTPRequest(
+            method: "GET", path: "/v1/files",
+            queryItems: ids.map { URLQueryItem(name: "ids[]", value: $0) })
+        return try await pipeline.send(request)
+    }
+
     /// Returns a paginated list of uploaded files.
     ///
     /// - Note: Pages by file id, which the API replaced with `page`/`next_page`. Kept so existing

@@ -69,5 +69,18 @@ final class FilesEndToEndTests: XCTestCase {
         XCTAssertEqual(requests[3].query["page"], "page_MjAyNS0wNS0xNFQwMDowMDowMFo=")
         XCTAssertEqual(requests[3].query["limit"], "1")
     }
+
+    func testListByIdsSendsEveryIdAndDecodesTheSinglePageOverARealSocket() async throws {
+        let client = try await startClient { _ in .json(200, MockResponses.filesList) }
+
+        let page = try await client.files.list(ids: ["file_1", "file_a/b"])
+        XCTAssertEqual(page.data.map(\.filename), ["document.pdf"])
+
+        let target = try XCTUnwrap(server.receivedRequests.first).target
+        let items = URLComponents(string: "http://127.0.0.1\(target)")?.queryItems ?? []
+        XCTAssertEqual(items.map(\.name), ["ids[]", "ids[]"])
+        XCTAssertEqual(items.compactMap(\.value), ["file_1", "file_a/b"])
+        XCTAssertNil(server.receivedRequests.first?.query["limit"])
+    }
 }
 #endif
