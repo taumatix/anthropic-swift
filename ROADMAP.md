@@ -66,10 +66,17 @@ outcome kind as a cancellation; changing it is a behaviour change, so it needs a
 case (additive for callers who `switch` with `default`, breaking for exhaustive ones — a minor-bump
 decision), and `BatchCreateRequest` has not been checked against the create page's request body.
 
-**Shape:** one service at a time, ordered by blast radius — `FilesService`, Batches and `ModelInfo` are
-done (2026-10-09), so the Admin types are next. Per service: read the vendor's `Response (200)` bodies, add a decoding
-test asserting those literal bodies with the page cited, and fix what fails. Admin last; it is the
-least used.
+Admin (2026-10-09) was the worst of them: `MembersService` called `/members` with `PATCH` where
+the API has `/users` with `POST`, so every call on it would have failed, and `invites.delete` could not
+decode the real reply. All fixed; the sweep of the eight services is complete. What is left from it:
+
+- **Admin list endpoints** were not fetched: their bodies are assumed to wrap the retrieve shape, and
+  `OrganizationAPIKey.lastUsedAt` is kept with no published field behind it. Fetch the four list pages
+  (`api_keys`, `invites`, `users`, `workspaces`) and either drop the assumption or the field (the field
+  is a deprecation, not a removal).
+- **`OrganizationRole` for create/update is a free `RawRepresentable`**, so `.admin` still compiles
+  although the API rejects it for invite and update; document or add a narrower type in the next minor.
+- **`BatchResultOutcome`'s `.canceled` fallback** (above) and `BatchCreateRequest` are unchecked.
 
 ## Models: the `lifecycle` filter and the live check
 

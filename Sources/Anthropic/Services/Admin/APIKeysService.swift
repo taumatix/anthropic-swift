@@ -21,7 +21,8 @@ public final class APIKeysService: Sendable {
 
     /// Returns a specific API key.
     public func get(id: String) async throws -> OrganizationAPIKey {
-        let request = HTTPRequest(method: "GET", path: "/v1/organizations/api_keys/\(id)")
+        let encoded = id.addingPercentEncoding(withAllowedCharacters: .anthropicPathComponent) ?? id
+        let request = HTTPRequest(method: "GET", path: "/v1/organizations/api_keys/\(encoded)")
         return try await pipeline.send(request)
     }
 

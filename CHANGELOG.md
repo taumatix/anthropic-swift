@@ -9,8 +9,31 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Fixed
+
+- **`admin.members` called routes that do not exist.** It used `/v1/organizations/members[/{id}]`
+  and `PATCH`; the published routes are `/v1/organizations/users[/{user_id}]`, and the role update
+  is a `POST` (<https://platform.claude.com/docs/en/api/admin/users/update>, retrieved 2026-10-09).
+  `UpdateMemberRequest` also sent `organization_role`; the body key is `role`. `OrganizationMember`
+  now reads `id` and `role` (the published names) and still accepts the old `user_id` and
+  `organization_role`; the Swift property names are unchanged. Not verified against the live API.
+- **`invites.delete` could not decode Anthropic's reply.** The published body is
+  `{"id","type":"invite_deleted"}` with no `deleted` key, which `InviteDeleteResponse` required.
+  `deleted` is now derived from `type`.
+- Admin ids (`apiKeys.get`, `invites.get/delete`, `workspaces.get/archive`, `members.update/delete`)
+  are percent-encoded in the request path, so an id containing `/` or `..` cannot reach another route.
+
 ### Added
 
+- **The rest of the documented Admin objects** (pages under
+  <https://platform.claude.com/docs/en/api/admin/>, retrieved 2026-10-09), all optional so bodies
+  without them still decode: `OrganizationAPIKey.expiresAt`, `partialKeyHint`, `principal`
+  (`APIKeyPrincipal`), `scope` (`APIKeyScope`) and the `archived`/`expired` statuses;
+  `OrganizationInvite.acceptedAt`, `rbacGroupIds` and the `deleted` status; `Workspace.compartmentId`,
+  `externalKeyId`, `tags` and `dataResidency` (`WorkspaceDataResidency`); the further
+  `OrganizationRole` values; and optional `rbacGroupIds` on `CreateInviteRequest` and `displayColor`,
+  `externalKeyId` and `tags` on `CreateWorkspaceRequest`. `OrganizationAPIKey.lastUsedAt` is kept
+  although the published body has no such field.
 - **`skills.versions.create(skillID:files:)` and `delete(skillID:version:)`**
   (<https://platform.claude.com/docs/en/api/skills/versions/create>, `.../delete`, retrieved
   2026-10-09). `create` uploads a new version of a skill as multipart `files[]` (same file-set

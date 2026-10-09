@@ -291,6 +291,108 @@ public enum MockResponses {
     }
     """.utf8)
 
+    // MARK: - Admin (vendor bodies)
+
+    /// The `Response (200)` body of <https://platform.claude.com/docs/en/api/admin/workspaces/retrieve>
+    /// (retrieved 2026-10-09).
+    public static let workspaceVendor = Data("""
+    {
+      "id": "wrkspc_01JwQvzr7rXLA5AGx3HKfFUJ",
+      "archived_at": "2024-11-01T23:59:27.427722Z",
+      "compartment_id": "f8a7b6c5-4d3e-4f1a-8b9c-0d1e2f3a4b5c",
+      "created_at": "2024-10-30T23:58:27.427722Z",
+      "data_residency": {
+        "allowed_inference_geos": "unrestricted",
+        "default_inference_geo": "global",
+        "workspace_geo": "us"
+      },
+      "display_color": "#6C5BB9",
+      "external_key_id": "ekey_01SDCCSbTxrXDpWc1phhtcfK",
+      "name": "Workspace Name",
+      "tags": {
+        "env": "prod",
+        "team": "platform"
+      },
+      "type": "workspace"
+    }
+    """.utf8)
+
+    /// The `Response (200)` body of <https://platform.claude.com/docs/en/api/admin/api_keys/retrieve>
+    /// (retrieved 2026-10-09).
+    public static let apiKeyVendor = Data("""
+    {
+      "id": "apikey_01Rj2N8SVvo6BePZj99NhmiT",
+      "created_at": "2024-10-30T23:58:27.427722Z",
+      "created_by": {
+        "id": "user_01WCz1FkmYMm4gnmykNKUu3Q",
+        "type": "user"
+      },
+      "expires_at": "2024-10-30T23:58:27.427722Z",
+      "name": "Developer Key",
+      "partial_key_hint": "sk-ant-api03-R2D...igAA",
+      "principal": {
+        "type": "user_actor",
+        "user_id": "user_01WCz1FkmYMm4gnmykNKUu3Q"
+      },
+      "scope": {
+        "type": "workspace",
+        "workspace_id": "wrkspc_01JwQvzr7rXLA5AGx3HKfFUJ"
+      },
+      "status": "active",
+      "type": "api_key",
+      "workspace_id": "wrkspc_01JwQvzr7rXLA5AGx3HKfFUJ"
+    }
+    """.utf8)
+
+    /// The `Response (200)` body of <https://platform.claude.com/docs/en/api/admin/invites/retrieve>
+    /// (retrieved 2026-10-09).
+    public static let inviteVendor = Data("""
+    {
+      "id": "invite_015gWxCN9Hfg2QhZwTK7Mdeu",
+      "accepted_at": "2019-12-27T18:11:19.117Z",
+      "email": "user@emaildomain.com",
+      "expires_at": "2024-11-20T23:58:27.427722Z",
+      "invited_at": "2024-10-30T23:58:27.427722Z",
+      "rbac_group_ids": [
+        "string"
+      ],
+      "role": "admin",
+      "status": "pending",
+      "type": "invite"
+    }
+    """.utf8)
+
+    /// The `Response (200)` body of <https://platform.claude.com/docs/en/api/admin/invites/delete>
+    /// (retrieved 2026-10-09).
+    public static let inviteDeletedVendor = Data("""
+    {
+      "id": "invite_015gWxCN9Hfg2QhZwTK7Mdeu",
+      "type": "invite_deleted"
+    }
+    """.utf8)
+
+    /// The `Response (200)` body of <https://platform.claude.com/docs/en/api/admin/users/retrieve>
+    /// (retrieved 2026-10-09).
+    public static let memberVendor = Data("""
+    {
+      "id": "user_01WCz1FkmYMm4gnmykNKUu3Q",
+      "added_at": "2024-10-30T23:58:27.427722Z",
+      "email": "user@emaildomain.com",
+      "name": "Jane Doe",
+      "role": "admin",
+      "type": "user"
+    }
+    """.utf8)
+
+    /// The `Response (200)` body of <https://platform.claude.com/docs/en/api/admin/users/delete>
+    /// (retrieved 2026-10-09).
+    public static let memberDeletedVendor = Data("""
+    {
+      "id": "user_01WCz1FkmYMm4gnmykNKUu3Q",
+      "type": "user_deleted"
+    }
+    """.utf8)
+
     // MARK: - Admin
 
     public static let workspace = Data("""
