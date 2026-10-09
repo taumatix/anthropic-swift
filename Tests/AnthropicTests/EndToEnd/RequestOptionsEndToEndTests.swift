@@ -64,5 +64,30 @@ final class RequestOptionsEndToEndTests: XCTestCase {
         XCTAssertEqual((json["output_config"] as? [String: Any])?["effort"] as? String, "low")
         XCTAssertNil((json["output_config"] as? [String: Any])?["format"])
     }
+
+    func testACacheBreakpointOnAToolReachesTheWireAndOnlyOnThatTool() async throws {
+        let schema = JSONSchema.object(properties: ["city": .string()], required: ["city"])
+        let json = try await body(MessageRequest(
+            model: .claudeSonnet55, messages: [.user("hi")], maxTokens: 64,
+            tools: [
+                Tool(name: "first", description: "no breakpoint", inputSchema: schema),
+                Tool(name: "last", inputSchema: schema, cacheControl: CacheControl(ttl: .oneHour)),
+            ]))
+        let tools = try XCTUnwrap(json["tools"] as? [[String: Any]])
+        XCTAssertEqual(tools.count, 2)
+        XCTAssertNil(tools[0]["cache_control"], "a tool without a breakpoint sends none")
+        XCTAssertEqual(tools[1]["cache_control"] as? NSDictionary, ["type": "ephemeral", "ttl": "1h"])
+        XCTAssertNil(tools[1]["cacheControl"], "the key is snake_case on the wire")
+    }
+
+    func testAToolRoundTripsWithAndWithoutABreakpoint() throws {
+        let plain = Tool(name: "t", inputSchema: .object(properties: [:]))
+        let cached = Tool(name: "t", inputSchema: .object(properties: [:]), cacheControl: CacheControl())
+        for tool in [plain, cached] {
+            let data = try JSONEncoder().encode(tool)
+            XCTAssertEqual(try JSONDecoder().decode(Tool.self, from: data), tool)
+        }
+        XCTAssertNil(plain.cacheControl)
+    }
 }
 #endif

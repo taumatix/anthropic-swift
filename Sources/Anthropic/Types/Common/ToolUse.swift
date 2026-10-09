@@ -8,11 +8,18 @@ public struct Tool: Sendable, Codable, Equatable {
     public let description: String?
     /// The JSON schema for the tool's input parameters.
     public let inputSchema: JSONSchema
+    /// A prompt-cache breakpoint on this tool. Set it on the last tool to cache every tool definition
+    /// before it as well as this one.
+    public let cacheControl: CacheControl?
 
-    public init(name: String, description: String? = nil, inputSchema: JSONSchema) {
+    public init(
+        name: String, description: String? = nil, inputSchema: JSONSchema,
+        cacheControl: CacheControl? = nil
+    ) {
         self.name = name
         self.description = description
         self.inputSchema = inputSchema
+        self.cacheControl = cacheControl
     }
 }
 
