@@ -11,12 +11,26 @@ public final class WorkspacesService: Sendable {
     }
 
     /// Returns a paginated list of workspaces.
-    public func list(limit: Int? = nil, afterId: String? = nil, beforeId: String? = nil) async throws -> Page<Workspace> {
+    ///
+    /// - Parameters:
+    ///   - includeArchived: Include archived workspaces. The API leaves them out unless asked.
+    ///   - includeDefault: Include the organization's default workspace. The API leaves it out
+    ///     unless asked.
+    public func list(
+        limit: Int? = nil, afterId: String? = nil, beforeId: String? = nil,
+        includeArchived: Bool? = nil, includeDefault: Bool? = nil
+    ) async throws -> Page<Workspace> {
         var queryItems = PaginationCursor(afterId: afterId, beforeId: beforeId).queryItems
         if let limit = limit { queryItems.append(URLQueryItem(name: "limit", value: "\(limit)")) }
+        if let includeArchived = includeArchived {
+            queryItems.append(URLQueryItem(name: "include_archived", value: "\(includeArchived)"))
+        }
+        if let includeDefault = includeDefault {
+            queryItems.append(URLQueryItem(name: "include_default", value: "\(includeDefault)"))
+        }
         let request = HTTPRequest(method: "GET", path: "/v1/organizations/workspaces", queryItems: queryItems)
         let page: Page<Workspace> = try await pipeline.send(request)
-        return attachFetcher(to: page)
+        return attachFetcher(to: page, carrying: queryItems.filter { $0.name != "after_id" && $0.name != "before_id" })
     }
 
     /// Creates a new workspace.
@@ -40,12 +54,12 @@ public final class WorkspacesService: Sendable {
         return try await pipeline.send(request)
     }
 
-    private func attachFetcher(to page: Page<Workspace>) -> Page<Workspace> {
+    private func attachFetcher(to page: Page<Workspace>, carrying: [URLQueryItem]) -> Page<Workspace> {
         let pipeline = self.pipeline
         return Page(
             data: page.data, hasMore: page.hasMore, firstId: page.firstId, lastId: page.lastId,
             nextPageFetcher: { afterId in
-                let queryItems = [URLQueryItem(name: "after_id", value: afterId)]
+                let queryItems = carrying + [URLQueryItem(name: "after_id", value: afterId)]
                 let request = HTTPRequest(method: "GET", path: "/v1/organizations/workspaces", queryItems: queryItems)
                 let nextPage: Page<Workspace> = try await pipeline.send(request)
                 return nextPage

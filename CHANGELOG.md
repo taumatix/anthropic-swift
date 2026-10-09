@@ -25,6 +25,11 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- **`admin.workspaces.list(includeArchived:includeDefault:)`**: the API leaves archived workspaces and
+  the organization's default workspace out of the list unless asked, and the SDK had no way to ask
+  (<https://platform.claude.com/docs/en/api/admin/workspaces/list>, retrieved 2026-10-09). Both default
+  to `nil`, so existing calls send what they sent. Next-page requests now also carry `limit` and these
+  filters; they used to drop `limit`.
 - **`files.list(ids:)`** looks up several files by id in one request (`ids[]`, at most 100 per the
   Files API reference). It returns a single page, since the API does not combine ids with paging.
   The `ids[]` spelling is from the reference, not confirmed against the live API.
