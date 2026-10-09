@@ -25,6 +25,11 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- **Filters on the other Admin lists.** `admin.members.list(email:roles:)`,
+  `admin.invites.list(email:roles:statuses:)` and `admin.apiKeys.list(status:workspaceId:createdByUserId:)`
+  (all default nil), carried across pages with `limit`, as the workspace filters are. Array filters are sent
+  as repeated items (`roles=admin&roles=billing`), which the reference calls "repeatable"; the live API
+  has not confirmed that spelling.
 - **`admin.workspaces.list(includeArchived:includeDefault:)`**: the API leaves archived workspaces and
   the organization's default workspace out of the list unless asked, and the SDK had no way to ask
   (<https://platform.claude.com/docs/en/api/admin/workspaces/list>, retrieved 2026-10-09). Both default

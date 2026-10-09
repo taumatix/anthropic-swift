@@ -96,5 +96,46 @@ final class AdminEndToEndTests: XCTestCase {
         }
         XCTAssertEqual(requests[1].query["after_id"], "wrkspc_a")
     }
+
+    func testMemberInviteAndKeyListsCarryTheirFiltersAcrossPagesOverARealSocket() async throws {
+        let page1 = Data(#"{"data":[],"first_id":"x","has_more":true,"last_id":"x"}"#.utf8)
+        let page2 = Data(#"{"data":[],"first_id":null,"has_more":false,"last_id":null}"#.utf8)
+        let server = try LoopbackHTTPServer { request in
+            .json(200, request.query["after_id"] == nil ? page1 : page2)
+        }
+        self.server = server
+        let baseURL = try await server.start()
+        let client = AnthropicClient(
+            apiKey: "test-key",
+            options: ClientOptions(apiKey: "test-key").baseURL(baseURL).maxRetries(0))
+
+        for try await _ in try await client.admin.members.list(
+            limit: 1, email: "a@b.co", roles: ["admin", "billing"]) {}
+        for try await _ in try await client.admin.invites.list(
+            limit: 1, email: "a@b.co", roles: ["user"], statuses: ["pending", "expired"]) {}
+        for try await _ in try await client.admin.apiKeys.list(
+            limit: 1, status: "active", workspaceId: "wrkspc_1", createdByUserId: "user_1") {}
+
+        let requests = server.receivedRequests
+        XCTAssertEqual(requests.count, 6)
+        for r in requests[0...1] {
+            XCTAssertTrue(r.target.hasPrefix("/v1/organizations/users?"))
+            XCTAssertEqual(r.query["email"], "a@b.co")
+            XCTAssertTrue(r.target.contains("roles=admin&roles=billing"), r.target)
+        }
+        for r in requests[2...3] {
+            XCTAssertTrue(r.target.hasPrefix("/v1/organizations/invites?"))
+            XCTAssertTrue(r.target.contains("statuses=pending&statuses=expired"), r.target)
+            XCTAssertEqual(r.query["roles"], "user")
+        }
+        for r in requests[4...5] {
+            XCTAssertTrue(r.target.hasPrefix("/v1/organizations/api_keys?"))
+            XCTAssertEqual(r.query["status"], "active")
+            XCTAssertEqual(r.query["workspace_id"], "wrkspc_1")
+            XCTAssertEqual(r.query["created_by_user_id"], "user_1")
+        }
+        for i in [1, 3, 5] { XCTAssertEqual(requests[i].query["after_id"], "x") }
+        for i in [0, 2, 4] { XCTAssertEqual(requests[i].query["limit"], "1") }
+    }
 }
 #endif

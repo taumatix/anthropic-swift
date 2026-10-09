@@ -70,11 +70,11 @@ Admin (2026-10-09) was the worst of them: `MembersService` called `/members` wit
 the API has `/users` with `POST`, so every call on it would have failed, and `invites.delete` could not
 decode the real reply. All fixed; the sweep of the eight services is complete. What is left from it:
 
-- **Admin list endpoints**: `workspaces` was fetched (2026-10-09); its body is the retrieve shape in a
-  page envelope, and it has `include_archived`/`include_default` filters, now exposed. The `api_keys`,
-  `invites` and `users` list pages are still unfetched: check their bodies and query filters (the
-  workspace one had filters the SDK lacked), and decide `OrganizationAPIKey.lastUsedAt`, kept with no
-  published field behind it (a deprecation, not a removal).
+- **Admin list endpoints**: all four are fetched and their filters exposed (2026-10-09). Left: the
+  live API has not confirmed repeated `roles`/`statuses` items; `OrganizationAPIKey` lacks the
+  published `scope`, `principal`, `created_by` and `expires_at` fields (additive optionals), and
+  `OrganizationAPIKey.lastUsedAt` has no published field behind it (a deprecation, not a removal);
+  `OrganizationInvite` lacks `rbac_group_ids`.
 - **`OrganizationRole` for create/update is a free `RawRepresentable`**, so `.admin` still compiles
   although the API rejects it for invite and update; document or add a narrower type in the next minor.
 - **`BatchResultOutcome`'s `.canceled` fallback** (above) and `BatchCreateRequest` are unchecked.
