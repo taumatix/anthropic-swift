@@ -161,11 +161,12 @@ and `mcp-client-2026-09-15`, which is where a reader can check what they are bef
 them here.
 
 Two more from v1.9.0 (2026-09-28), both on the Messages API this SDK covers. The **thinking
-parameter** is done (2026-10-09), `between_tools` included: `MessageRequest` had no `thinking` at all,
-so extended thinking could not be requested. That says the request is probably short of other
-documented parameters too (`service_tier`, `output_config`, `container`, `context_management` and the
-like are unchecked): diff `MessageRequest` against the reference's parameter list before building any
-one of them. **Cache diagnostics** remain: the request takes `diagnostics: {previous_message_id}` (a
+parameter** is done (2026-10-09), `between_tools` included. So is the diff of `MessageRequest` against
+the Messages reference (2026-10-09): `cache_control` (top level), `service_tier`, `inference_geo` and
+`output_config` (effort, JSON-schema format) were missing and are added. Still missing from the request:
+**per-block `cache_control`** (on text, tool-use, tool-result and tool blocks and on tools, which is what
+makes prompt caching useful, so it is the next entry here), `container` (id or skills, max 20) and
+`context_management`; the reference page did not list the last one, so check where it is documented. **Cache diagnostics** remain: the request takes `diagnostics: {previous_message_id}` (a
 string up to 256, or null to opt in), and the response carries `diagnostics.cache_miss_reason`, whose
 shape the reference excerpt read did not show. Also unchecked: `thinking` on `CountTokensRequest` and on
 batch request params.

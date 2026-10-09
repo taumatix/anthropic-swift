@@ -34,6 +34,14 @@ public struct MessageRequest: Sendable, Encodable {
     public var topP: Double?
     /// Whether, and how, the model reasons before answering.
     public var thinking: ThinkingConfig?
+    /// A prompt-cache breakpoint applied to the last cacheable block of the request.
+    public var cacheControl: CacheControl?
+    /// Which capacity tier the request may use.
+    public var serviceTier: ServiceTier?
+    /// The region inference runs in; the workspace default when nil.
+    public var inferenceGeo: String?
+    /// Effort and structured-output settings.
+    public var outputConfig: OutputConfig?
     /// Whether to stream the response (set by the SDK, not the user).
     var stream: Bool?
 
@@ -49,7 +57,11 @@ public struct MessageRequest: Sendable, Encodable {
         temperature: Double? = nil,
         topK: Int? = nil,
         topP: Double? = nil,
-        thinking: ThinkingConfig? = nil
+        thinking: ThinkingConfig? = nil,
+        cacheControl: CacheControl? = nil,
+        serviceTier: ServiceTier? = nil,
+        inferenceGeo: String? = nil,
+        outputConfig: OutputConfig? = nil
     ) {
         self.model = model
         self.messages = messages
@@ -63,6 +75,10 @@ public struct MessageRequest: Sendable, Encodable {
         self.topK = topK
         self.topP = topP
         self.thinking = thinking
+        self.cacheControl = cacheControl
+        self.serviceTier = serviceTier
+        self.inferenceGeo = inferenceGeo
+        self.outputConfig = outputConfig
     }
 }
 
