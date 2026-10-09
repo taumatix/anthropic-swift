@@ -25,6 +25,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- **`Tool.cacheControl`**: a prompt-cache breakpoint on a tool definition (`init` parameter defaults to `nil`, so
+  existing code compiles unchanged). On the wire as `cache_control: {type: "ephemeral", ttl?}` per the Messages
+  reference. Not verified against the live API.
 - **`MessageRequest.cacheControl`, `serviceTier`, `inferenceGeo` and `outputConfig`**, with the new
   `CacheControl` (`ttl: .fiveMinutes/.oneHour`), `ServiceTier` (`.auto`, `.standardOnly`) and `OutputConfig`
   (`effort: .low...max`, plus a `jsonSchema` for structured outputs). Prompt caching and structured output
