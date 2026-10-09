@@ -113,8 +113,7 @@ token alongside the id cursor the other services still use. `SkillDecodingTests`
 `SkillsEndToEndTests` assert Anthropic's literal published response bodies and cite the page each
 came from.
 
-Still open: skill **versions**. `latest_version_id` points at a sub-resource this SDK does not
-model, so a version id cannot be resolved. That is a `ROADMAP.md` entry.
+Skill **versions** (`skills.versions`: list, get, create, delete) are modelled from the published pages, retrieved 2026-10-09; the beta form (epoch-timestamp addressing) is not.
 
 *Files* — **migrated on 2026-10-09** on the same footing as Skills: `FilesService` sends no
 `anthropic-beta` header, `FileObject` decodes the documented `FileMetadata` body, `upload` takes

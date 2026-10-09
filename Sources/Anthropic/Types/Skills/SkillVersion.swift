@@ -40,6 +40,17 @@ public struct SkillVersion: Sendable, Decodable, Equatable {
     }
 }
 
+/// The response to deleting a skill version.
+///
+/// Decoded from the body documented at
+/// <https://platform.claude.com/docs/en/api/skills/versions/delete> (retrieved 2026-10-09).
+public struct DeletedSkillVersion: Sendable, Decodable, Equatable {
+    /// Unique identifier of the deleted version.
+    public let id: String
+    /// Deleted object type. Always `"skill_version_deleted"`.
+    public let type: String
+}
+
 /// Which version of a skill to address: a specific version ID, or the newest.
 ///
 /// A string literal is a version ID, except `"latest"`, which is the API's own spelling of

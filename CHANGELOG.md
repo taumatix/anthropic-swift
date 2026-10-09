@@ -11,6 +11,11 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- **`skills.versions.create(skillID:files:)` and `delete(skillID:version:)`**
+  (<https://platform.claude.com/docs/en/api/skills/versions/create>, `.../delete`, retrieved
+  2026-10-09). `create` uploads a new version of a skill as multipart `files[]` (same file-set
+  checks as `skills.create`, shared) and returns a `SkillVersion`; `delete` takes a version ID and
+  returns the new `DeletedSkillVersion`. Not verified against the live API (no key).
 - **`ModelInfo` carries the rest of the documented model object**
   (<https://platform.claude.com/docs/en/api/models>, retrieved 2026-10-09): `capabilities`
   (`ModelCapabilities`, with `CapabilitySupport` leaves), `lifecycle`, `line`, `deprecatedAt`,

@@ -68,3 +68,57 @@ final class SkillVersionsServiceTests: XCTestCase {
         XCTAssertEqual(mock.recordedRequests[1].queryItemsByName["limit"], "1", "limit must survive the page boundary")
     }
 }
+
+final class SkillVersionsWriteTests: XCTestCase {
+    var mock: MockHTTPClient!
+    var client: AnthropicClient!
+
+    override func setUp() {
+        super.setUp()
+        mock = MockHTTPClient()
+        client = AnthropicClient(configuration: ClientConfiguration(apiKey: "test-key", httpClient: mock))
+    }
+
+    private let files = [SkillFile(path: "my-skill/SKILL.md", content: Data("---\nname: my-skill\n---\n".utf8), mimeType: "text/markdown")]
+
+    func testCreatePostsMultipartToTheVersionsPath() async throws {
+        mock.handler = { request in
+            XCTAssertEqual(request.method, "POST")
+            XCTAssertEqual(request.path, "/v1/skills/skill_01/versions")
+            XCTAssertTrue(request.headers["content-type"]?.hasPrefix("multipart/form-data; boundary=") == true)
+            let body = String(decoding: request.body ?? Data(), as: UTF8.self)
+            XCTAssertTrue(body.contains("name=\"files[]\"; filename=\"my-skill/SKILL.md\""), body)
+            XCTAssertFalse(body.contains("display_name"), body)
+            return HTTPResponse(statusCode: 200, body: MockResponses.skillVersionObject)
+        }
+        let version = try await client.skills.versions.create(skillID: "skill_01", files: files)
+        XCTAssertEqual(version.type, "skill_version")
+    }
+
+    func testCreateWithoutASkillMdSendsNothing() async throws {
+        mock.handler = { _ in XCTFail("no request should be sent"); return HTTPResponse(statusCode: 200, body: Data()) }
+        do {
+            _ = try await client.skills.versions.create(
+                skillID: "skill_01", files: [SkillFile(path: "my-skill/other.md", content: Data())])
+            XCTFail("expected an error")
+        } catch AnthropicError.encodingError {}
+    }
+
+    func testDeleteSendsDELETEAndDecodesTheDocumentedBody() async throws {
+        mock.handler = { request in
+            XCTAssertEqual(request.method, "DELETE")
+            XCTAssertEqual(request.path, "/v1/skills/skill_01/versions/ver_9")
+            return HTTPResponse(statusCode: 200, body: MockResponses.skillVersionDeleted)
+        }
+        let deleted = try await client.skills.versions.delete(skillID: "skill_01", version: "ver_9")
+        XCTAssertEqual(deleted, DeletedSkillVersion(id: "id", type: "skill_version_deleted"))
+    }
+
+    func testDeleteEncodesTheVersionSegment() async throws {
+        mock.handler = { request in
+            XCTAssertEqual(request.path, "/v1/skills/skill_01/versions/..%2Fx")
+            return HTTPResponse(statusCode: 200, body: MockResponses.skillVersionDeleted)
+        }
+        _ = try await client.skills.versions.delete(skillID: "skill_01", version: "../x")
+    }
+}
