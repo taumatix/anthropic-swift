@@ -505,6 +505,14 @@ public enum MockResponses {
     }
     """.utf8)
 
+    /// <https://platform.claude.com/docs/en/api/skills/versions/delete>, retrieved 2026-10-09.
+    public static let skillVersionDeleted = Data("""
+    {
+      "id": "id",
+      "type": "skill_version_deleted"
+    }
+    """.utf8)
+
     /// <https://platform.claude.com/docs/en/api/skills/versions/list>, retrieved 2026-10-09.
     public static let skillVersionList = Data("""
     {

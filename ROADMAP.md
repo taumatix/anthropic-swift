@@ -23,16 +23,14 @@ justifies a pass on its own.
   that reject them. `let fn = client.skills.list` still binds to the deprecated overload, so the
   ambiguity only really goes away when it does.
 
-## Create and delete a skill version
+## Skill version create and delete are untested against the real API
 
-**Today:** a caller can read versions (`client.skills.versions`, 0.13.0 pending) but not upload a
-new one or remove one; both mean dropping out of the SDK. The reference pages for
-`POST /v1/skills/{skill_id}/versions` and `DELETE .../versions/{version}` have not been read yet, so
-their bodies and the delete response are unknown. Upload reuses `SkillFile` and the multipart code
-from `create(files:)`.
+**Today:** `versions.create` and `delete` (2026-10-09) are proven against the documented bodies
+only. Unknown: what the API answers to an upload whose `SKILL.md` name differs from the skill's, and
+whether delete refuses the newest or only remaining version.
 
-**Shape:** read both pages, write the literal bodies into `MockResponses`, then add `create` and
-`delete` on `SkillVersionsService`, with a gated live round trip next to `testCreateGetDeleteRoundTrip`.
+**Shape:** extend `testCreateGetDeleteRoundTrip` (gated by `ANTHROPIC_SKILLS_WRITE_TESTS`) to upload
+a second version, delete it, and pin the error shapes seen.
 
 ## Skill versions are not checked against the real API
 

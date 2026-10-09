@@ -62,22 +62,7 @@ public final class SkillsService: Sendable {
     /// - Throws: ``AnthropicError/encodingError(_:)`` if `files` is empty or contains no `SKILL.md`,
     ///   without sending a request.
     public func create(files: [SkillFile], displayName: String? = nil) async throws -> Skill {
-        guard !files.isEmpty else {
-            throw Self.invalidFileSet(files, "A skill must be created from at least one file, including a SKILL.md.")
-        }
-        // Compare the last path component, not a suffix: `hasSuffix("SKILL.md")` also accepts
-        // `MYSKILL.md`. Layout beyond this is the API's to adjudicate.
-        guard files.contains(where: { ($0.path as NSString).lastPathComponent == "SKILL.md" }) else {
-            throw Self.invalidFileSet(files, "A skill's file set must include a file named SKILL.md.")
-        }
-        guard !files.contains(where: { $0.path.split(separator: "/").contains("..") }) else {
-            throw Self.invalidFileSet(files, "A skill file path must not contain a '..' component.")
-        }
-
-        var form = MultipartFormData()
-        for file in files {
-            form.append(.init(name: "files[]", filename: file.path, contentType: file.mimeType, data: file.content))
-        }
+        var form = try Self.uploadForm(files: files)
         if let displayName = displayName {
             form.append(.init(name: "display_name", filename: nil, contentType: "text/plain", data: Data(displayName.utf8)))
         }
@@ -175,6 +160,28 @@ public final class SkillsService: Sendable {
             queryItems.append(URLQueryItem(name: "source", value: source.rawValue))
         }
         return HTTPRequest(method: "GET", path: "/v1/skills", queryItems: queryItems)
+    }
+
+    /// Validates a skill's file set and frames it as the multipart form both `POST /v1/skills` and
+    /// `POST /v1/skills/{id}/versions` take.
+    static func uploadForm(files: [SkillFile]) throws -> MultipartFormData {
+        guard !files.isEmpty else {
+            throw invalidFileSet(files, "A skill must be created from at least one file, including a SKILL.md.")
+        }
+        // Compare the last path component, not a suffix: `hasSuffix("SKILL.md")` also accepts
+        // `MYSKILL.md`. Layout beyond this is the API's to adjudicate.
+        guard files.contains(where: { ($0.path as NSString).lastPathComponent == "SKILL.md" }) else {
+            throw invalidFileSet(files, "A skill's file set must include a file named SKILL.md.")
+        }
+        guard !files.contains(where: { $0.path.split(separator: "/").contains("..") }) else {
+            throw invalidFileSet(files, "A skill file path must not contain a '..' component.")
+        }
+
+        var form = MultipartFormData()
+        for file in files {
+            form.append(.init(name: "files[]", filename: file.path, contentType: file.mimeType, data: file.content))
+        }
+        return form
     }
 
     private static func invalidFileSet(_ files: [SkillFile], _ reason: String) -> AnthropicError {

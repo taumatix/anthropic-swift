@@ -59,6 +59,31 @@ final class SkillsEndToEndTests: XCTestCase {
         XCTAssertNil(server.receivedRequests[0].headers["anthropic-beta"])
     }
 
+    func testAVersionIsUploadedAndDeletedOverARealSocket() async throws {
+        let client = try await startClient { request in
+            request.method == "DELETE"
+                ? .json(200, MockResponses.skillVersionDeleted)
+                : .json(200, MockResponses.skillVersionObject)
+        }
+
+        let version = try await client.skills.versions.create(
+            skillID: "skill_01",
+            files: [SkillFile(path: "my-skill/SKILL.md", content: Data("---\nname: my-skill\n---\n".utf8), mimeType: "text/markdown")])
+        XCTAssertEqual(version.skillId, "skill_01JAbcdefghijklmnopqrstuvw")
+        let deleted = try await client.skills.versions.delete(skillID: "skill_01", version: version.id)
+        XCTAssertEqual(deleted.type, "skill_version_deleted")
+
+        let upload = server.receivedRequests[0]
+        XCTAssertEqual(upload.method, "POST")
+        XCTAssertEqual(upload.path, "/v1/skills/skill_01/versions")
+        XCTAssertTrue(try XCTUnwrap(upload.headers["content-type"]).hasPrefix("multipart/form-data; boundary="))
+        XCTAssertEqual(upload.body.count, Int(upload.headers["content-length"] ?? "-1"))
+        XCTAssertTrue(String(decoding: upload.body, as: UTF8.self).contains("filename=\"my-skill/SKILL.md\""))
+        XCTAssertEqual(server.receivedRequests[1].method, "DELETE")
+        XCTAssertEqual(server.receivedRequests[1].path, "/v1/skills/skill_01/versions/id")
+        XCTAssertNil(upload.headers["anthropic-beta"])
+    }
+
     // MARK: - List
 
     func testListDecodesTheDocumentedBodyOverARealSocket() async throws {
