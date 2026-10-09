@@ -25,6 +25,11 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- **`MessageRequest.cacheControl`, `serviceTier`, `inferenceGeo` and `outputConfig`**, with the new
+  `CacheControl` (`ttl: .fiveMinutes/.oneHour`), `ServiceTier` (`.auto`, `.standardOnly`) and `OutputConfig`
+  (`effort: .low...max`, plus a `jsonSchema` for structured outputs). Prompt caching and structured output
+  could not be requested at all before. All default to nil and are then not sent. Per-block `cache_control`
+  is not here yet. Shapes are from the Messages reference of 2026-10-09; not exercised against the live API.
 - **`MessageRequest.thinking`** with the new `ThinkingConfig` (`.enabled(budgetTokens:display:)`,
   `.disabled`, `.adaptive(display:)`, `.betweenTools`). The request could not ask for extended thinking
   at all before: only the response's thinking blocks were modelled. Defaults to nil and is then not sent.
