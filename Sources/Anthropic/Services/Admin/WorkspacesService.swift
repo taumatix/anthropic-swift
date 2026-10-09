@@ -28,13 +28,15 @@ public final class WorkspacesService: Sendable {
 
     /// Returns a specific workspace.
     public func get(id: String) async throws -> Workspace {
-        let request = HTTPRequest(method: "GET", path: "/v1/organizations/workspaces/\(id)")
+        let encoded = id.addingPercentEncoding(withAllowedCharacters: .anthropicPathComponent) ?? id
+        let request = HTTPRequest(method: "GET", path: "/v1/organizations/workspaces/\(encoded)")
         return try await pipeline.send(request)
     }
 
     /// Archives a workspace.
     public func archive(id: String) async throws -> Workspace {
-        let request = HTTPRequest(method: "POST", path: "/v1/organizations/workspaces/\(id)/archive")
+        let encoded = id.addingPercentEncoding(withAllowedCharacters: .anthropicPathComponent) ?? id
+        let request = HTTPRequest(method: "POST", path: "/v1/organizations/workspaces/\(encoded)/archive")
         return try await pipeline.send(request)
     }
 

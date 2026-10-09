@@ -28,13 +28,15 @@ public final class InvitesService: Sendable {
 
     /// Gets a specific invite.
     public func get(id: String) async throws -> OrganizationInvite {
-        let request = HTTPRequest(method: "GET", path: "/v1/organizations/invites/\(id)")
+        let encoded = id.addingPercentEncoding(withAllowedCharacters: .anthropicPathComponent) ?? id
+        let request = HTTPRequest(method: "GET", path: "/v1/organizations/invites/\(encoded)")
         return try await pipeline.send(request)
     }
 
     /// Deletes (cancels) an invite.
     public func delete(id: String) async throws -> InviteDeleteResponse {
-        let request = HTTPRequest(method: "DELETE", path: "/v1/organizations/invites/\(id)")
+        let encoded = id.addingPercentEncoding(withAllowedCharacters: .anthropicPathComponent) ?? id
+        let request = HTTPRequest(method: "DELETE", path: "/v1/organizations/invites/\(encoded)")
         return try await pipeline.send(request)
     }
 

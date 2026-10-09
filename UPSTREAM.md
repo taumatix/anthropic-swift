@@ -266,3 +266,10 @@ moved:
 `ModelInfo` follows <https://platform.claude.com/docs/en/api/models> (list and get `Response (200)`
 bodies, retrieved 2026-10-09). Not confirmed against the live API (no key). The `lifecycle` list
 filter is not implemented.
+
+## Admin API (checked 2026-10-09)
+
+`OrganizationAPIKey`, `OrganizationInvite`, `OrganizationMember` and `Workspace` follow the
+`Response (200)` bodies of the `api_keys`, `invites`, `users` and `workspaces` retrieve, create,
+update, delete and archive pages under <https://platform.claude.com/docs/en/api/admin/> (retrieved
+2026-10-09). Not confirmed against the live API (no Admin key). The list pages were not read.

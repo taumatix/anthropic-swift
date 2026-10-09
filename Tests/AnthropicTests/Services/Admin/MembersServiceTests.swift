@@ -14,7 +14,7 @@ final class MembersServiceTests: XCTestCase {
 
     func testListMembers() async throws {
         mock.handler = { request in
-            XCTAssertEqual(request.path, "/v1/organizations/members")
+            XCTAssertEqual(request.path, "/v1/organizations/users")
             return HTTPResponse(statusCode: 200, body: MockResponses.memberList)
         }
         let page = try await client.admin.members.list()
@@ -24,8 +24,8 @@ final class MembersServiceTests: XCTestCase {
 
     func testUpdateMember() async throws {
         mock.handler = { request in
-            XCTAssertEqual(request.method, "PATCH")
-            XCTAssertEqual(request.path, "/v1/organizations/members/user_01WCz1FkmYMm4gnmykNKvp7Y")
+            XCTAssertEqual(request.method, "POST")
+            XCTAssertEqual(request.path, "/v1/organizations/users/user_01WCz1FkmYMm4gnmykNKvp7Y")
             return HTTPResponse(statusCode: 200, body: MockResponses.member)
         }
         let updated = try await client.admin.members.update(
@@ -38,7 +38,7 @@ final class MembersServiceTests: XCTestCase {
     func testDeleteMember() async throws {
         mock.handler = { request in
             XCTAssertEqual(request.method, "DELETE")
-            XCTAssertEqual(request.path, "/v1/organizations/members/user_01WCz1FkmYMm4gnmykNKvp7Y")
+            XCTAssertEqual(request.path, "/v1/organizations/users/user_01WCz1FkmYMm4gnmykNKvp7Y")
             return HTTPResponse(statusCode: 200, body: Data("{}".utf8))
         }
         try await client.admin.members.delete(userId: "user_01WCz1FkmYMm4gnmykNKvp7Y")
