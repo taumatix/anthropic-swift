@@ -66,5 +66,35 @@ final class AdminEndToEndTests: XCTestCase {
         XCTAssertEqual(seen.first, "POST /v1/organizations/users/user_01WCz1FkmYMm4gnmykNKUu3Q")
         XCTAssertEqual(seen.count, 7)
     }
+
+    func testWorkspaceListCarriesItsFiltersAcrossPagesOverARealSocket() async throws {
+        let first = String(decoding: MockResponses.workspaceVendor, as: UTF8.self)
+        let page1 = Data("""
+        {"data":[\(first)],"first_id":"wrkspc_a","has_more":true,"last_id":"wrkspc_a"}
+        """.utf8)
+        let page2 = Data(#"{"data":[],"first_id":null,"has_more":false,"last_id":null}"#.utf8)
+        let server = try LoopbackHTTPServer { request in
+            .json(200, request.query["after_id"] == nil ? page1 : page2)
+        }
+        self.server = server
+        let baseURL = try await server.start()
+        let client = AnthropicClient(
+            apiKey: "test-key",
+            options: ClientOptions(apiKey: "test-key").baseURL(baseURL).maxRetries(0))
+
+        var count = 0
+        for try await _ in try await client.admin.workspaces.list(
+            limit: 1, includeArchived: true, includeDefault: false) { count += 1 }
+        XCTAssertEqual(count, 1)
+
+        let requests = server.receivedRequests
+        XCTAssertEqual(requests.count, 2)
+        for r in requests {
+            XCTAssertEqual(r.query["include_archived"], "true")
+            XCTAssertEqual(r.query["include_default"], "false")
+            XCTAssertEqual(r.query["limit"], "1")
+        }
+        XCTAssertEqual(requests[1].query["after_id"], "wrkspc_a")
+    }
 }
 #endif
