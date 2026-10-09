@@ -25,6 +25,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- **`files.list(ids:)`** looks up several files by id in one request (`ids[]`, at most 100 per the
+  Files API reference). It returns a single page, since the API does not combine ids with paging.
+  The `ids[]` spelling is from the reference, not confirmed against the live API.
 - **The rest of the documented Admin objects** (pages under
   <https://platform.claude.com/docs/en/api/admin/>, retrieved 2026-10-09), all optional so bodies
   without them still decode: `OrganizationAPIKey.expiresAt`, `partialKeyHint`, `principal`

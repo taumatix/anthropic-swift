@@ -94,7 +94,8 @@ for a live call that shows it. `ModelsService`'s next-page fetcher also drops `l
 **Today:** `FilesService` decodes the documented bodies, uploads with `expiresInSeconds` and pages by
 token, without the beta header (2026-10-09 pass). Still open:
 
-- no `ids[]` batch lookup on list (documented: at most 100, exclusive with `page` and `limit`),
+- `list(ids:)` (2026-10-09) sends `ids[]` as the reference spells it; whether the live API accepts that
+  spelling, and that it ignores or rejects `limit`, is unconfirmed (needs a key),
 - the service now sends no beta header on the strength of the docs alone; the live API has not
   confirmed it returns the GA bodies (needs a key),
 - the upload part's `Content-Type` is still always sent, though the docs no longer require it,
