@@ -160,10 +160,15 @@ pinning**, both beta. The `anthropic-beta` enum read on 2026-09-24 carries `inli
 and `mcp-client-2026-09-15`, which is where a reader can check what they are before anyone builds
 them here.
 
-Two more from v1.9.0 (2026-09-28), both on the Messages API this SDK covers: the
-**`between_tools` thinking type**, and **cache diagnostics**, which are now GA and appear on
-`Message` and `MessageCreateParams`. Both were read from the release notes on 2026-10-01 and not
-yet from the API reference, so check their shape there before building either.
+Two more from v1.9.0 (2026-09-28), both on the Messages API this SDK covers. The **thinking
+parameter** is done (2026-10-09), `between_tools` included: `MessageRequest` had no `thinking` at all,
+so extended thinking could not be requested. That says the request is probably short of other
+documented parameters too (`service_tier`, `output_config`, `container`, `context_management` and the
+like are unchecked): diff `MessageRequest` against the reference's parameter list before building any
+one of them. **Cache diagnostics** remain: the request takes `diagnostics: {previous_message_id}` (a
+string up to 256, or null to opt in), and the response carries `diagnostics.cache_miss_reason`, whose
+shape the reference excerpt read did not show. Also unchecked: `thinking` on `CountTokensRequest` and on
+batch request params.
 
 **Shape:** diff this SDK's service methods against the official SDK's, record the result as
 entries here, and keep the comparison as a checked-in inventory rather than a one-off reading —
