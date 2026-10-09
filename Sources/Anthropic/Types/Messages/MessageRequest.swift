@@ -32,6 +32,8 @@ public struct MessageRequest: Sendable, Encodable {
     public var topK: Int?
     /// Top-P sampling parameter.
     public var topP: Double?
+    /// Whether, and how, the model reasons before answering.
+    public var thinking: ThinkingConfig?
     /// Whether to stream the response (set by the SDK, not the user).
     var stream: Bool?
 
@@ -46,7 +48,8 @@ public struct MessageRequest: Sendable, Encodable {
         stopSequences: [String]? = nil,
         temperature: Double? = nil,
         topK: Int? = nil,
-        topP: Double? = nil
+        topP: Double? = nil,
+        thinking: ThinkingConfig? = nil
     ) {
         self.model = model
         self.messages = messages
@@ -59,6 +62,7 @@ public struct MessageRequest: Sendable, Encodable {
         self.temperature = temperature
         self.topK = topK
         self.topP = topP
+        self.thinking = thinking
     }
 }
 

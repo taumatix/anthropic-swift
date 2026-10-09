@@ -25,6 +25,11 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- **`MessageRequest.thinking`** with the new `ThinkingConfig` (`.enabled(budgetTokens:display:)`,
+  `.disabled`, `.adaptive(display:)`, `.betweenTools`). The request could not ask for extended thinking
+  at all before: only the response's thinking blocks were modelled. Defaults to nil and is then not sent.
+  Shapes are from the Messages reference (retrieved 2026-10-09); which models accept which is left to the
+  API, and nothing here has run against it.
 - **Filters on the other Admin lists.** `admin.members.list(email:roles:)`,
   `admin.invites.list(email:roles:statuses:)` and `admin.apiKeys.list(status:workspaceId:createdByUserId:)`
   (all default nil), carried across pages with `limit`, as the workspace filters are. Array filters are sent
