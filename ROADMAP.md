@@ -11,6 +11,14 @@ streaming API, whose turns can legitimately run for many minutes, but no caller 
 either way. If one does, the shape is a separate, opt-in total deadline, not a change to
 `timeout`: a caller's own Task cancellation already ends a request.
 
+## Read what the Python SDK v2 and API version 2026-10-21 changed
+
+Found by the 2026-10-26 maintenance pass. `anthropic-sdk-python` went v1.11.0 to v2.3.0 and the API
+gained version `2026-10-21` (removes `temperature`/`top_p`/`top_k`; Admin field renames). This SDK
+still sends `2023-06-01`, so nothing is broken, but the new surface is unread. Read the v2.x release
+notes, list new API surface, and decide whether `ClientConfiguration` should allow opting into
+`2026-10-21` (additive; keep `2023-06-01` the default until a major bump). Then drop this entry.
+
 ## Ergonomics the Skills GA migration left on the table
 
 Small, additive, and each one removes a class of caller mistake. Grouped because no one of them

@@ -13,6 +13,8 @@ final class ModelTests: XCTestCase {
         XCTAssertEqual(Model.claudeFable51.rawValue, "claude-fable-5-1")
         XCTAssertEqual(Model.claudeOpus55.rawValue, "claude-opus-5-5")
         XCTAssertEqual(Model.claudeSonnet55.rawValue, "claude-sonnet-5-5")
+        XCTAssertEqual(Model.claudeHaiku55.rawValue, "claude-haiku-5-5")
+        // Haiku 4.5 is on the legacy line as of 2026-10-26 but still served.
         XCTAssertEqual(Model.claudeHaiku45.rawValue, "claude-haiku-4-5")
     }
 
