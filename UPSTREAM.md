@@ -9,16 +9,17 @@ API you are calling.
 - name: anthropic-api-version
   kind: literal
   value: "2023-06-01"
-  checked: 2026-10-05
+  checked: 2026-10-26
   note: >-
-    sent as the anthropic-version header on every request;
+    sent as the anthropic-version header on every request; 2026-10-21 now exists
+    (see the 2026-10-26 notes below) and is deliberately NOT adopted;
     ClientConfiguration.defaultAnthropicVersion. Still the newest version in the
     docs' version history on 2026-09-24 (the only other entry is 2023-01-01).
 
 - name: files-api-beta
   kind: literal
   value: "files-api-2025-04-14"
-  checked: 2026-10-09
+  checked: 2026-10-26
   hold: >-
     RETIRED FROM USE, not stale. FilesService no longer sends this header: with it the
     server keeps the superseded {data, has_more, first_id, last_id} envelope and ignores
@@ -30,7 +31,7 @@ API you are calling.
 - name: skills-api-beta
   kind: literal
   value: "skills-2025-10-02"
-  checked: 2026-10-05
+  checked: 2026-10-26
   hold: >-
     RETIRED FROM USE, not stale. SkillsService no longer sends this header — it is
     still a live beta value, but the beta endpoint returns the same object and the
@@ -43,8 +44,8 @@ API you are calling.
 - name: anthropic-sdk-python
   kind: github-release
   repo: anthropics/anthropic-sdk-python
-  tag: v1.11.0
-  checked: 2026-10-05
+  tag: v2.3.0
+  checked: 2026-10-26
   note: >-
     not ported from, but read as the reference for new API surface — what it gains,
     this lacks. v1.8.0 (2026-09-22) added claude-opus-5-5, inline tool definitions
@@ -59,8 +60,8 @@ API you are calling.
 
 - name: model-ids
   kind: literal
-  value: "fable-5-1, opus-5-5, sonnet-5-5, haiku-4-5"
-  checked: 2026-10-05
+  value: "fable-5-1, opus-5-5, sonnet-5-5, haiku-5-5"
+  checked: 2026-10-26
   note: >-
     the four current models per the docs' comparison table; Model.swift carries
     these plus every legacy ID. A model released later still works — Model takes an
@@ -273,3 +274,18 @@ filter is not implemented.
 `Response (200)` bodies of the `api_keys`, `invites`, `users` and `workspaces` retrieve, create,
 update, delete and archive pages under <https://platform.claude.com/docs/en/api/admin/> (retrieved
 2026-10-09). Not confirmed against the live API (no Admin key). The list pages were not read.
+
+Pages read on 2026-10-26, a maintenance pass. **Three things moved**:
+
+- <https://platform.claude.com/docs/en/api/versioning>: a new version, `2026-10-21`, now exists. It
+  removes `temperature`, `top_p` and `top_k` (400 on every model) and renames several Admin fields
+  (`role_ids`, `rbac_group_id`, `scope.workspace_id`, ...). This SDK still sends `2023-06-01`, which
+  stays valid, so nothing breaks; adopting `2026-10-21` is a ROADMAP entry, not a bump.
+- <https://platform.claude.com/docs/en/about-claude/models/overview>: the current lineup is Fable
+  5.1, Opus 5.5, Sonnet 5.5 and **Haiku 5.5** (`claude-haiku-5-5`); Haiku 4.5 moved to legacy.
+  `.claudeHaiku55` added.
+- <https://platform.claude.com/docs/en/api/beta/skills/list>: `skills-2025-10-02` and
+  `files-api-2025-04-14` are both still in the `anthropic-beta` enum (now ~58 values). `BetaSkill`
+  still matches GA `Skill`. Both holds remain true.
+- `anthropics/anthropic-sdk-python`: latest is v2.3.0 (was v1.11.0); the pin is moved to it but the
+  v1.11 to v2.3 changes have not been read. ROADMAP.md's surface-gaps entry carries that.

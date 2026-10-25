@@ -9,6 +9,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- `Model.claudeHaiku55` (`claude-haiku-5-5`), the current Haiku per the models overview.
+
 ### Fixed
 
 - **`admin.members` called routes that do not exist.** It used `/v1/organizations/members[/{id}]`

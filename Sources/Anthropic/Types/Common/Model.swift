@@ -81,7 +81,11 @@ public struct Model: RawRepresentable, Sendable, Hashable, Codable, ExpressibleB
     @available(*, deprecated, message: "Deprecated 2026-09-30; retires 2026-11-30. Use .claudeSonnet55.")
     public static let claudeSonnet45 = Model(rawValue: "claude-sonnet-4-5")
 
-    /// Claude Haiku 4.5 — the fastest and most cost-effective model.
+    /// Claude Haiku 5.5 — the fastest model, for high-volume, latency-sensitive tasks. 1M
+    /// context, 128K max output.
+    public static let claudeHaiku55 = Model(rawValue: "claude-haiku-5-5")
+
+    /// Claude Haiku 4.5 — superseded by ``claudeHaiku55``; still available.
     public static let claudeHaiku45 = Model(rawValue: "claude-haiku-4-5")
 
     // MARK: - Claude 4 family (retained for source compatibility)
