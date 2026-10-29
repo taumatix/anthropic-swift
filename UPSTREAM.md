@@ -9,7 +9,7 @@ API you are calling.
 - name: anthropic-api-version
   kind: literal
   value: "2023-06-01"
-  checked: 2026-10-26
+  checked: 2026-10-29
   note: >-
     sent as the anthropic-version header on every request; 2026-10-21 now exists
     (see the 2026-10-26 notes below) and is deliberately NOT adopted;
@@ -19,7 +19,7 @@ API you are calling.
 - name: files-api-beta
   kind: literal
   value: "files-api-2025-04-14"
-  checked: 2026-10-26
+  checked: 2026-10-29
   hold: >-
     RETIRED FROM USE, not stale. FilesService no longer sends this header: with it the
     server keeps the superseded {data, has_more, first_id, last_id} envelope and ignores
@@ -31,7 +31,7 @@ API you are calling.
 - name: skills-api-beta
   kind: literal
   value: "skills-2025-10-02"
-  checked: 2026-10-26
+  checked: 2026-10-29
   hold: >-
     RETIRED FROM USE, not stale. SkillsService no longer sends this header — it is
     still a live beta value, but the beta endpoint returns the same object and the
@@ -45,7 +45,7 @@ API you are calling.
   kind: github-release
   repo: anthropics/anthropic-sdk-python
   tag: v2.3.0
-  checked: 2026-10-26
+  checked: 2026-10-29
   note: >-
     not ported from, but read as the reference for new API surface — what it gains,
     this lacks. v1.8.0 (2026-09-22) added claude-opus-5-5, inline tool definitions
@@ -61,7 +61,7 @@ API you are calling.
 - name: model-ids
   kind: literal
   value: "fable-5-1, opus-5-5, sonnet-5-5, haiku-5-5"
-  checked: 2026-10-26
+  checked: 2026-10-29
   note: >-
     the four current models per the docs' comparison table; Model.swift carries
     these plus every legacy ID. A model released later still works — Model takes an
