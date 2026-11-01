@@ -9,6 +9,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Changed
+
+- Relicensed from MIT to Apache-2.0, matching the other Taumatix libraries. Versions already released stay under MIT.
+
 ### Added
 
 - `Model.claudeHaiku55` (`claude-haiku-5-5`), the current Haiku per the models overview.
