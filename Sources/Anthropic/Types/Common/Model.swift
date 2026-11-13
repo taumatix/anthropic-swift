@@ -32,8 +32,15 @@ public struct Model: RawRepresentable, Sendable, Hashable, Codable, ExpressibleB
     // (`claude-3-5-sonnet`). The constant names mirror that, so `claudeOpus5` here and
     // `claude35Sonnet` below are both named after the ID they carry.
 
-    /// Claude Fable 5.1 — for demanding reasoning and long-horizon agentic work, or when evals on
+    /// Claude Fable 5.2 — for demanding reasoning and long-horizon agentic work, or when evals on
     /// ``claudeOpus55`` at higher effort still fall short. 1M context, 128K max output.
+    public static let claudeFable52 = Model(rawValue: "claude-fable-5-2")
+
+    /// Claude Mythos 5.2 — the same model as ``claudeFable52``, invite only through Project
+    /// Glasswing. Use ``claudeFable52`` unless your organization takes part.
+    public static let claudeMythos52 = Model(rawValue: "claude-mythos-5-2")
+
+    /// Claude Fable 5.1 — superseded by ``claudeFable52``; still available.
     /// Requires 30-day data retention; not available under ZDR.
     public static let claudeFable51 = Model(rawValue: "claude-fable-5-1")
 

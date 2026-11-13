@@ -9,17 +9,17 @@ API you are calling.
 - name: anthropic-api-version
   kind: literal
   value: "2023-06-01"
-  checked: 2026-11-05
+  checked: 2026-11-13
   note: >-
     sent as the anthropic-version header on every request; 2026-10-21 now exists
     (see the 2026-10-26 notes below) and is deliberately NOT adopted;
     ClientConfiguration.defaultAnthropicVersion. Still the newest version in the
-    docs' version history on 2026-09-24 (2026-11-02: version history still lists 2023-01-01, 2023-06-01 and 2026-10-21) (the only other entry is 2023-01-01).
+    docs' version history on 2026-09-24 (2026-11-13: still only 2023-01-01, 2023-06-01 and 2026-10-21; 2026-11-02: version history still lists 2023-01-01, 2023-06-01 and 2026-10-21) (the only other entry is 2023-01-01).
 
 - name: files-api-beta
   kind: literal
   value: "files-api-2025-04-14"
-  checked: 2026-11-05
+  checked: 2026-11-13
   hold: >-
     RETIRED FROM USE, not stale. FilesService no longer sends this header: with it the
     server keeps the superseded {data, has_more, first_id, last_id} envelope and ignores
@@ -31,21 +31,22 @@ API you are calling.
 - name: skills-api-beta
   kind: literal
   value: "skills-2025-10-02"
-  checked: 2026-11-05
+  checked: 2026-11-13
   hold: >-
     RETIRED FROM USE, not stale. SkillsService no longer sends this header — it is
     still a live beta value, but the beta endpoint returns the same object and the
     same {data, next_page} envelope as GA, so it changed nothing. Kept pinned so the
     next pass rechecks that claim; restore it with
-    ClientOptions.additionalHeaders if it ever diverges again. Rechecked 2026-09-24:
+    ClientOptions.additionalHeaders if it ever diverges again. Rechecked 2026-11-13: both beta
+    headers still in the beta skills page's anthropic-beta enum. Rechecked 2026-09-24:
     still in the beta enum (now 48 values), and the beta page's BetaSkill is still
     field-for-field the GA Skill.
 
 - name: anthropic-sdk-python
   kind: github-release
   repo: anthropics/anthropic-sdk-python
-  tag: v2.5.0
-  checked: 2026-11-05
+  tag: v2.8.0
+  checked: 2026-11-13
   note: >-
     not ported from, but read as the reference for new API surface — what it gains,
     this lacks. v1.8.0 (2026-09-22) added claude-opus-5-5, inline tool definitions
@@ -56,14 +57,17 @@ API you are calling.
     has an item or no cursor is left. Not here yet, and on ROADMAP.md's
     surface-gaps entry: the between_tools thinking type, and cache diagnostics (now
     GA) on Message and MessageCreateParams. Read 2026-11-05 up to v2.5.0: v2.4.0 and v2.5.0 add only Admin (analytics, spend limits, RBAC, workspace ids filter) and error-class/details types; nothing new for Messages, Files or Skills. The Admin, Managed Agents and
-    MCP-tunnel additions are out of this SDK's scope.
+    MCP-tunnel additions are out of this SDK's scope. Read 2026-11-13 up to v2.8.0: v2.6.0 to v2.8.0 add Admin error codes, webhook
+    events, usage-report filters and Claude Tag fields, plus Bedrock/Vertex fixes; the one
+    relevant item is v2.7.0's claude-fable-5-2 and claude-mythos-5-2, which landed here.
 
 - name: model-ids
   kind: literal
-  value: "fable-5-1, opus-5-5, sonnet-5-5, haiku-5-5"
-  checked: 2026-11-05
+  value: "fable-5-2, opus-5-5, sonnet-5-5, haiku-5-5"
+  checked: 2026-11-13
   note: >-
-    the four current models per the docs' comparison table (re-read 2026-11-02, unchanged); Model.swift carries
+    the four current models per the docs' comparison table (re-read 2026-11-13: Fable 5.2,
+    `claude-fable-5-2`, replaced Fable 5.1; Mythos 5.2 appears too); Model.swift carries
     these plus every legacy ID. A model released later still works — Model takes an
     arbitrary string — so this pin costs autocomplete, not functionality.
 ```

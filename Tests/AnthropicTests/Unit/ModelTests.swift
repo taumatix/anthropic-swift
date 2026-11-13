@@ -10,6 +10,9 @@ final class ModelTests: XCTestCase {
     // https://platform.claude.com/docs/en/about-claude/models/overview — not from recall.
     // Everything in testLegacyModelRawValues below is on that page's "Legacy models" line.
     func testCurrentModelRawValues() {
+        // Fable 5.2 replaced 5.1 as the current top model, read 2026-11-13.
+        XCTAssertEqual(Model.claudeFable52.rawValue, "claude-fable-5-2")
+        XCTAssertEqual(Model.claudeMythos52.rawValue, "claude-mythos-5-2")
         XCTAssertEqual(Model.claudeFable51.rawValue, "claude-fable-5-1")
         XCTAssertEqual(Model.claudeOpus55.rawValue, "claude-opus-5-5")
         XCTAssertEqual(Model.claudeSonnet55.rawValue, "claude-sonnet-5-5")
