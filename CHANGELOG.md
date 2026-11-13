@@ -16,6 +16,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Added
 
 - `Model.claudeHaiku55` (`claude-haiku-5-5`), the current Haiku per the models overview.
+- `Model.claudeFable52` (`claude-fable-5-2`), now the current Fable per the models overview, and
+  `Model.claudeMythos52` (`claude-mythos-5-2`, invite only). `.claudeFable51` is marked superseded
+  in its doc comment but still works.
 
 ### Fixed
 

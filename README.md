@@ -176,7 +176,7 @@ MessageRequest(model: "claude-some-future-model", ...)    // string literal, no 
 2026-09-30 and names Sonnet 5.5 as its replacement. `.claudeSonnet45` and `.claude4Sonnet` still
 send it and still work until then, and both now warn. Move to `.claudeSonnet55`.
 
-`.claudeMythos51` and `.claudeMythos5` are also defined, but only Project Glasswing participants
+`.claudeMythos52`, `.claudeMythos51` and `.claudeMythos5` are also defined, but only Project Glasswing participants
 can reach them.
 
 The Claude 3.x constants (`.claude35Sonnet`, `.claude3Opus`, …) are deprecated: those models are
