@@ -9,7 +9,7 @@ API you are calling.
 - name: anthropic-api-version
   kind: literal
   value: "2023-06-01"
-  checked: 2026-11-19
+  checked: 2026-11-23
   note: >-
     sent as the anthropic-version header on every request; 2026-10-21 now exists
     (see the 2026-10-26 notes below) and is deliberately NOT adopted;
@@ -19,7 +19,7 @@ API you are calling.
 - name: files-api-beta
   kind: literal
   value: "files-api-2025-04-14"
-  checked: 2026-11-19
+  checked: 2026-11-23
   hold: >-
     RETIRED FROM USE, not stale. FilesService no longer sends this header: with it the
     server keeps the superseded {data, has_more, first_id, last_id} envelope and ignores
@@ -31,7 +31,7 @@ API you are calling.
 - name: skills-api-beta
   kind: literal
   value: "skills-2025-10-02"
-  checked: 2026-11-19
+  checked: 2026-11-23
   hold: >-
     RETIRED FROM USE, not stale. SkillsService no longer sends this header — it is
     still a live beta value, but the beta endpoint returns the same object and the
@@ -45,8 +45,8 @@ API you are calling.
 - name: anthropic-sdk-python
   kind: github-release
   repo: anthropics/anthropic-sdk-python
-  tag: v2.10.0
-  checked: 2026-11-19
+  tag: v2.12.0
+  checked: 2026-11-23
   note: >-
     not ported from, but read as the reference for new API surface — what it gains,
     this lacks. v1.8.0 (2026-09-22) added claude-opus-5-5, inline tool definitions
@@ -63,11 +63,14 @@ API you are calling.
     Read 2026-11-19 up to v2.10.0: v2.9.0 and v2.10.0 add Admin/RBAC and Claude Tag Bundle
     endpoints, agent-toolset fixes, a beta billing_policy parameter and new error codes; nothing
     new for Messages, Files or Skills.
+    Read 2026-11-23 up to v2.12.0 (release notes): v2.11.0 and v2.12.0 add Admin managed settings,
+    sandbox_egress_restricted and image_dimensions_too_large error codes (error types are plain
+    strings here), a query-string %20 fix and Bedrock fixes; nothing new for Messages, Files or Skills.
 
 - name: model-ids
   kind: literal
   value: "fable-5-2, opus-5-5, sonnet-5-5, haiku-5-5"
-  checked: 2026-11-19
+  checked: 2026-11-23
   note: >-
     the four current models per the docs' comparison table (re-read 2026-11-13: Fable 5.2,
     `claude-fable-5-2`, replaced Fable 5.1; Mythos 5.2 appears too); Model.swift carries
