@@ -7,9 +7,9 @@ import Foundation
 /// `created_at` is an RFC 3339 string, the size is `size_bytes`, and `mime_type`, `downloadable`
 /// and `expires_at` are part of the object.
 ///
-/// The fields this SDK first shipped — an integer `created_at`, `size`, `purpose` — were never in
-/// that body, so a documented response could not decode at all. They stay readable (``createdAt``,
-/// ``size``, ``purpose``) and a response in the old shape still decodes.
+/// The fields this SDK first shipped — an integer `created_at`, `size` — were never in that body,
+/// so a documented response could not decode at all. They stay readable (``createdAt``, ``size``)
+/// and a response in the old shape still decodes. `purpose` was never in the body and is gone.
 public struct FileObject: Sendable, Decodable, Equatable {
     /// The unique file identifier.
     public let id: String
@@ -25,12 +25,6 @@ public struct FileObject: Sendable, Decodable, Equatable {
     /// Unix timestamp (seconds) when the file was created. `0` if the API sent a string this SDK
     /// cannot parse; ``createdAtString`` then still holds it.
     public let createdAt: Int
-    /// The purpose of the file. The documented object has no such field, so this is empty
-    /// against the current API.
-    @available(*, deprecated, message: "The Files API does not return a purpose.")
-    public var purpose: String { _purpose }
-    private let _purpose: String
-
     /// MIME type of the file. `nil` only in the pre-GA shape, which did not carry one.
     public let mimeType: String?
     /// Whether the file's content can be downloaded. The API documents a default of `false`.
@@ -43,7 +37,7 @@ public struct FileObject: Sendable, Decodable, Equatable {
     public var sizeBytes: Int { size }
 
     private enum CodingKeys: String, CodingKey {
-        case id, type, filename, size, sizeBytes, createdAt, purpose, mimeType, downloadable, expiresAt
+        case id, type, filename, size, sizeBytes, createdAt, mimeType, downloadable, expiresAt
     }
 
     public init(from decoder: Decoder) throws {
@@ -64,7 +58,6 @@ public struct FileObject: Sendable, Decodable, Equatable {
             self.createdAtString = raw
             self.createdAt = Self.unixSeconds(rfc3339: raw) ?? 0
         }
-        self._purpose = try container.decodeIfPresent(String.self, forKey: .purpose) ?? ""
         self.mimeType = try container.decodeIfPresent(String.self, forKey: .mimeType)
         self.downloadable = try container.decodeIfPresent(Bool.self, forKey: .downloadable) ?? false
         self.expiresAt = try container.decodeIfPresent(String.self, forKey: .expiresAt)

@@ -57,6 +57,7 @@ final class BatchesEndToEndTests: XCTestCase {
             case .errored(let e): outcomes.append("\(result.customId):\(e.error.type)")
             case .canceled: outcomes.append("\(result.customId):canceled")
             case .expired: outcomes.append("\(result.customId):expired")
+            case .unknown(let type): outcomes.append("\(result.customId):unknown:\(type)")
             }
         }
         XCTAssertEqual(outcomes, ["q1:succeeded", "q2:overloaded_error", "q3:canceled", "q4:expired"])

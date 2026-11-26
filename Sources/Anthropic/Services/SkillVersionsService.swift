@@ -56,7 +56,7 @@ public final class SkillVersionsService: Sendable {
     ///   - files: The version's files. All must share one top-level directory, and one must be a
     ///     `SKILL.md` at its root. The `SKILL.md` must resolve to the skill's existing `name`: the
     ///     API refuses an upload that renames the skill.
-    /// - Throws: ``AnthropicError/encodingError(_:)`` if `files` is empty or contains no `SKILL.md`,
+    /// - Throws: ``AnthropicError/invalidRequest(_:)`` if `files` is empty or contains no `SKILL.md`,
     ///   without sending a request.
     public func create(skillID: String, files: [SkillFile]) async throws -> SkillVersion {
         let form = try SkillsService.uploadForm(files: files)

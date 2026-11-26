@@ -51,7 +51,10 @@ final class BaseURLRoutingTests: XCTestCase {
         func send(_ request: HTTPRequest) async throws -> HTTPResponse {
             HTTPResponse(statusCode: 200)
         }
-        func stream(_ request: HTTPRequest) -> AsyncThrowingStream<Data, Error> {
+        func stream(
+            _ request: HTTPRequest,
+            validatingResponseFrom validate: @escaping @Sendable (URL?) throws -> Void
+        ) -> AsyncThrowingStream<Data, Error> {
             AsyncThrowingStream { $0.finish() }
         }
     }

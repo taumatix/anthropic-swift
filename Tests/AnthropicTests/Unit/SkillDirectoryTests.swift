@@ -72,7 +72,7 @@ final class SkillDirectoryTests: XCTestCase {
         let dir = try skill(named: "nested", ["docs/SKILL.md": "---\nname: x\n---\n"])
 
         XCTAssertThrowsError(try SkillFile.directory(at: dir)) { error in
-            guard case AnthropicError.encodingError = error else {
+            guard case AnthropicError.invalidRequest = error else {
                 return XCTFail("expected the invalid-file-set error, got \(error)")
             }
         }

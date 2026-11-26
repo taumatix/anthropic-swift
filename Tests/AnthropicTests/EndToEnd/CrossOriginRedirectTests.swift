@@ -229,21 +229,6 @@ final class CrossOriginRedirectTests: XCTestCase {
         XCTAssertEqual(seen.get()?.port, baseURL.port, "validate was not given the response's URL")
     }
 
-    /// The companion: a transport written before the new method existed still streams. Unchecked,
-    /// which is the documented cost of not adopting it, but not broken.
-    func testATransportWithoutTheNewMethodStillStreams() async throws {
-        let (client, _) = try await startUnguardedClientRedirectingToAForgedStream {
-            PreexistingHTTPClient(inner: UnguardedHTTPClient(baseURL: $0))
-        }
-
-        var events = 0
-        for try await _ in client.messages.stream(
-            MessageRequest(model: .claudeSonnet5, messages: [.user("hi")], maxTokens: 16)
-        ) { events += 1 }
-
-        XCTAssertGreaterThan(events, 0, "a pre-existing transport stopped streaming")
-    }
-
     /// Proves the forgery fixture would actually decode if it were delivered — otherwise the test
     /// above could pass because the body was unusable rather than because it never arrived.
     func testTheForgedFixtureWouldOtherwiseDecode() async throws {
@@ -364,15 +349,6 @@ final class CrossOriginRedirectTests: XCTestCase {
             request.headers.forEach { urlRequest.setValue($1, forHTTPHeaderField: $0) }
             return urlRequest
         }
-    }
-
-    /// A caller's transport written before `stream(_:validatingResponseFrom:)` existed. It must
-    /// keep compiling and keep streaming, unchecked, rather than start failing.
-    private struct PreexistingHTTPClient: HTTPClient {
-        let inner: UnguardedHTTPClient
-
-        func send(_ request: HTTPRequest) async throws -> HTTPResponse { try await inner.send(request) }
-        func stream(_ request: HTTPRequest) -> AsyncThrowingStream<Data, Error> { inner.stream(request) }
     }
 
     /// An origin that redirects to another serving a well-formed SSE stream, behind a client built

@@ -59,7 +59,7 @@ public final class SkillsService: Sendable {
     ///     top-level directory.
     ///   - displayName: Human-readable label. When `nil`, the API derives it from the `SKILL.md`
     ///     frontmatter `name`.
-    /// - Throws: ``AnthropicError/encodingError(_:)`` if `files` is empty or contains no `SKILL.md`,
+    /// - Throws: ``AnthropicError/invalidRequest(_:)`` if `files` is empty or contains no `SKILL.md`,
     ///   without sending a request.
     public func create(files: [SkillFile], displayName: String? = nil) async throws -> Skill {
         var form = try Self.uploadForm(files: files)
@@ -71,18 +71,6 @@ public final class SkillsService: Sendable {
         request.headers["content-type"] = form.contentTypeHeader
         request.body = form.build()
         return try await pipeline.send(request)
-    }
-
-    /// Creates a new skill.
-    ///
-    /// - Warning: The API has never accepted a JSON body on `POST /v1/skills`; it takes an uploaded
-    ///   file set. This overload sends what it always sent and will fail against the API. Use
-    ///   ``create(files:displayName:)``.
-    @available(*, deprecated, message: "The API creates skills from uploaded files. Use create(files:displayName:).")
-    public func create(_ request: CreateSkillRequest) async throws -> Skill {
-        let body = try JSONCoding.encoder.encode(request)
-        let httpRequest = HTTPRequest(method: "POST", path: "/v1/skills", body: body)
-        return try await pipeline.send(httpRequest)
     }
 
     // MARK: - List
@@ -105,22 +93,6 @@ public final class SkillsService: Sendable {
         let result: Page<Skill> = try await pipeline.send(
             Self.listRequest(limit: limit, pageToken: pageToken, source: source))
         return attachFetcher(to: result, limit: limit, source: source)
-    }
-
-    /// Returns a paginated list of skills.
-    ///
-    /// - Warning: The Skills API paginates by opaque token, not by item id — `after_id` is ignored.
-    ///   Use ``list(limit:page:source:)``.
-    @available(*, deprecated, message: "The Skills API paginates by token. Use list(limit:pageToken:source:).")
-    public func list(limit: Int? = nil, afterId: String?) async throws -> Page<Skill> {
-        var queryItems = PaginationCursor(afterId: afterId).queryItems
-        if let limit = limit { queryItems.append(URLQueryItem(name: "limit", value: "\(limit)")) }
-        let request = HTTPRequest(method: "GET", path: "/v1/skills", queryItems: queryItems)
-        // No fetcher. This overload's response is an id-cursor page, and handing its `lastId` to
-        // the token fetcher would re-request the same page under `page=` forever against a server
-        // that ignores an unknown parameter. Iteration therefore stops at one page, which is the
-        // honest outcome for a cursor the API does not implement.
-        return try await pipeline.send(request)
     }
 
     // MARK: - Get
@@ -166,15 +138,15 @@ public final class SkillsService: Sendable {
     /// `POST /v1/skills/{id}/versions` take.
     static func uploadForm(files: [SkillFile]) throws -> MultipartFormData {
         guard !files.isEmpty else {
-            throw invalidFileSet(files, "A skill must be created from at least one file, including a SKILL.md.")
+            throw AnthropicError.invalidRequest("A skill must be created from at least one file, including a SKILL.md.")
         }
         // Compare the last path component, not a suffix: `hasSuffix("SKILL.md")` also accepts
         // `MYSKILL.md`. Layout beyond this is the API's to adjudicate.
         guard files.contains(where: { ($0.path as NSString).lastPathComponent == "SKILL.md" }) else {
-            throw invalidFileSet(files, "A skill's file set must include a file named SKILL.md.")
+            throw AnthropicError.invalidRequest("A skill's file set must include a file named SKILL.md.")
         }
         guard !files.contains(where: { $0.path.split(separator: "/").contains("..") }) else {
-            throw invalidFileSet(files, "A skill file path must not contain a '..' component.")
+            throw AnthropicError.invalidRequest("A skill file path must not contain a '..' component.")
         }
 
         var form = MultipartFormData()
@@ -182,13 +154,6 @@ public final class SkillsService: Sendable {
             form.append(.init(name: "files[]", filename: file.path, contentType: file.mimeType, data: file.content))
         }
         return form
-    }
-
-    private static func invalidFileSet(_ files: [SkillFile], _ reason: String) -> AnthropicError {
-        .encodingError(EncodingError.invalidValue(
-            files,
-            .init(codingPath: [], debugDescription: reason)
-        ))
     }
 
     /// Attaches a fetcher that carries `limit` and `source` onto the follow-up request, so

@@ -11,9 +11,8 @@ public struct HTTPResponse: Sendable {
     /// The URL the response actually came from, after any redirects.
     ///
     /// `RequestPipeline` refuses a response whose origin (scheme, host, port) differs from the
-    /// configured `baseURL`'s. `nil` means the `HTTPClient` did not say, and skips that check —
-    /// which keeps a client written before this property existed working, and is also why a
-    /// custom `HTTPClient` should set it.
+    /// configured `baseURL`'s, and one that carries no `url` at all: a client that cannot say where
+    /// a response came from cannot show it came from the API.
     public let url: URL?
 
     public init(statusCode: Int, headers: [String: String] = [:], body: Data = Data(), url: URL? = nil) {

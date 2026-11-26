@@ -422,10 +422,8 @@ rather than documented:
   **If you supply your own `HTTPClient`, tell the SDK where responses came from.** Set
   `HTTPResponse.url` (from `HTTPURLResponse.url`) on what `send` returns, and implement
   `stream(_:validatingResponseFrom:)` to call `validate` with the response's URL before yielding
-  any bytes. A client that does neither keeps working but is not checked: a response with no `url`
-  passes, and a client without the streaming method falls back to `stream(_:)` unvalidated. The
-  SDK's own client does both. **At 1.0 a response with no `url` will be refused**, so a client
-  that says nothing will stop working then rather than go on unchecked; report the URL now.
+  any bytes. Since 1.0 a response with no `url` is refused and the streaming method is required.
+  See [MIGRATION.md](MIGRATION.md).
 
 If you route through a gateway that redirects to a different host, point `baseURL` at the host that
 actually answers.

@@ -101,7 +101,7 @@ final class SkillVersionsWriteTests: XCTestCase {
             _ = try await client.skills.versions.create(
                 skillID: "skill_01", files: [SkillFile(path: "my-skill/other.md", content: Data())])
             XCTFail("expected an error")
-        } catch AnthropicError.encodingError {}
+        } catch AnthropicError.invalidRequest {}
     }
 
     func testDeleteSendsDELETEAndDecodesTheDocumentedBody() async throws {

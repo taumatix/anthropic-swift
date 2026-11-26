@@ -10,11 +10,17 @@ enum ResponseOrigin {
 
     /// The error to throw for a response that arrived from `url`, or `nil` if it may be used.
     ///
-    /// A `nil` `url` passes: the `HTTPClient` did not report one, and refusing would break every
-    /// client written before ``HTTPResponse/url`` existed. The foreign body is not carried in the
-    /// error, since it is exactly what must not reach the caller.
+    /// A `nil` `url` is refused: a client that does not say where a response came from cannot be
+    /// told apart from one that took it from somewhere else. The foreign body is not carried in
+    /// the error, since it is exactly what must not reach the caller.
     static func refusal(for url: URL?, baseURL: URL) -> AnthropicError? {
-        guard let url, !CrossOriginRedirectGuard.sameOrigin(url, baseURL) else { return nil }
+        guard let url else {
+            return .networkError(URLError(.badServerResponse, userInfo: [
+                NSLocalizedDescriptionKey:
+                    "The HTTPClient did not report where the response came from, so it cannot be checked against the configured \(originDescription(baseURL)).",
+            ]))
+        }
+        guard !CrossOriginRedirectGuard.sameOrigin(url, baseURL) else { return nil }
         return .networkError(URLError(.badServerResponse, userInfo: [
             NSURLErrorFailingURLErrorKey: url,
             NSLocalizedDescriptionKey:

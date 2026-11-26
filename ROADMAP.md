@@ -1,5 +1,12 @@
 # Roadmap
 
+## Run the live suite and act on what it finds (blocks tagging 1.0.0)
+
+**Today:** 1.0's breaking changes are merged, but nothing in this repo has ever run against the real
+API (no key on the build host). `Tests/AnthropicTests/Integration/README.md` is the runbook. Tag
+`v1.0.0` only after a human has run it and the results are in; each failure becomes an entry here.
+
+
 Ordered by how much each entry limits real deployments, not by how interesting it is to build.
 Each entry says what breaks today, so it can be judged on its own.
 
@@ -18,18 +25,6 @@ gained version `2026-10-21` (removes `temperature`/`top_p`/`top_k`; Admin field 
 still sends `2023-06-01`, so nothing is broken, but the new surface is unread. Read the v2.x release
 notes, list new API surface, and decide whether `ClientConfiguration` should allow opting into
 `2026-10-21` (additive; keep `2023-06-01` the default until a major bump). Then drop this entry.
-
-## Ergonomics the Skills GA migration left on the table
-
-Small, additive, and each one removes a class of caller mistake. Grouped because no one of them
-justifies a pass on its own.
-
-- **`AnthropicError.invalidRequest(String)`.** `create`'s validation failures are reported as
-  `encodingError`, which makes a caller-input mistake look like a serialisation bug. Adding an enum
-  case breaks exhaustive `switch`es, so it waits for a major.
-- **Retire `list(limit:afterId:)` and `create(_:)`.** Both are deprecated and both hit endpoints
-  that reject them. `let fn = client.skills.list` still binds to the deprecated overload, so the
-  ambiguity only really goes away when it does.
 
 ## Skill version create and delete are untested against the real API
 
@@ -69,10 +64,7 @@ kind of work that goes stale if done as one sweep and never repeated.
 
 Batches (2026-10-09) turned out close to right: only `archived_at` was missing, and ids were not
 percent-encoded. The rest of the outcome shapes matched the documented ones. Left over from it:
-`BatchResultOutcome` decodes an unrecognised `result.type` as `.canceled`, which would hide a new
-outcome kind as a cancellation; changing it is a behaviour change, so it needs an `.unknown(type:)`
-case (additive for callers who `switch` with `default`, breaking for exhaustive ones — a minor-bump
-decision), and `BatchCreateRequest` has not been checked against the create page's request body.
+`BatchCreateRequest` has not been checked against the create page's request body.
 
 Admin (2026-10-09) was the worst of them: `MembersService` called `/members` with `PATCH` where
 the API has `/users` with `POST`, so every call on it would have failed, and `invites.delete` could not
@@ -85,7 +77,7 @@ decode the real reply. All fixed; the sweep of the eight services is complete. W
   deprecation, not a removal).
 - **`OrganizationRole` for create/update is a free `RawRepresentable`**, so `.admin` still compiles
   although the API rejects it for invite and update; document or add a narrower type in the next minor.
-- **`BatchResultOutcome`'s `.canceled` fallback** (above) and `BatchCreateRequest` are unchecked.
+- **`BatchCreateRequest`** is unchecked.
 
 ## Models: the `lifecycle` filter and the live check
 
@@ -194,22 +186,3 @@ yet had a roadmap pass that read the source properly.
 **Shape:** the next roadmap pass reads `Sources/Anthropic` — retry policy, backoff, streaming
 backpressure, cancellation, error typing — and replaces this placeholder with real entries.
 An entry written from the code is worth more than one guessed before reading it.
-
-## A custom `HTTPClient` can opt out of the origin check by saying nothing (for 1.0)
-
-**Today:** a unary response with no `HTTPResponse.url` passes the origin check, and a client that
-does not implement `stream(_:validatingResponseFrom:)` streams unchecked. 0.9.0 settled the
-non-breaking half: no deprecation of the URL-less initializer (it would warn on every test double,
-90 in this repo alone), `MockHTTPClient(responseURL:)` so tests can see the check, a test pinning
-that `URLSessionHTTPClient` calls the `validate` it is given, and the 1.0 change announced in the
-README and CHANGELOG.
-
-Related, since 0.10.0: the pipeline enforces the plaintext policy on the configured `baseURL`
-for every client, but a custom client may route a path-relative `HTTPRequest` anywhere it likes.
-Handing the client the base URL, the same change the mock needs below, would let the pipeline
-check the URL a request is actually for.
-
-**Shape, at 1.0:** treat a `nil` URL as a refusal, and make `stream(_:validatingResponseFrom:)` a
-requirement with no default. `MockHTTPClient` then needs a default `responseURL`, the configured
-base URL, which it cannot know today because `HTTPRequest` is path-relative; the likeliest answer
-is for the pipeline to hand the base URL to the client. Record all of it in a `MIGRATION.md`.
