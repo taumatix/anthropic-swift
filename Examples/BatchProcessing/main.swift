@@ -73,6 +73,8 @@ struct BatchProcessingExample {
                     print("(canceled)")
                 case .expired:
                     print("(expired)")
+                case .unknown(let type):
+                    print("(unrecognised outcome: \(type))")
                 }
                 print()
             }

@@ -25,12 +25,22 @@ public final class RecordingHTTPClient: HTTPClient, @unchecked Sendable {
             recordings.first(where: { $0.request.path == request.path })
         }
         guard let recording else {
-            return HTTPResponse(statusCode: 404, body: Data("{}".utf8))
+            return HTTPResponse(statusCode: 404, body: Data("{}".utf8), url: request.baseURL)
         }
-        return recording.response
+        let response = recording.response
+        guard response.url == nil else { return response }
+        return HTTPResponse(statusCode: response.statusCode, headers: response.headers, body: response.body, url: request.baseURL)
     }
 
-    public func stream(_ request: HTTPRequest) -> AsyncThrowingStream<Data, Error> {
-        AsyncThrowingStream { $0.finish() }
+    public func stream(
+        _ request: HTTPRequest,
+        validatingResponseFrom validate: @escaping @Sendable (URL?) throws -> Void
+    ) -> AsyncThrowingStream<Data, Error> {
+        do {
+            try validate(request.baseURL)
+        } catch {
+            return AsyncThrowingStream { $0.finish(throwing: error) }
+        }
+        return AsyncThrowingStream { $0.finish() }
     }
 }

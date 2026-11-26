@@ -76,18 +76,6 @@ public final class FilesService: Sendable {
         return try await pipeline.send(request)
     }
 
-    /// Returns a paginated list of uploaded files.
-    ///
-    /// - Note: Pages by file id, which the API replaced with `page`/`next_page`. Kept so existing
-    ///   call sites compile; iteration over the result stops after one page.
-    @available(*, deprecated, message: "The Files API paginates by token. Use list(limit:pageToken:).")
-    public func list(limit: Int? = nil, afterId: String?, beforeId: String? = nil) async throws -> Page<FileObject> {
-        var queryItems = PaginationCursor(afterId: afterId, beforeId: beforeId).queryItems
-        if let limit = limit { queryItems.append(URLQueryItem(name: "limit", value: "\(limit)")) }
-        var request = HTTPRequest(method: "GET", path: "/v1/files", queryItems: queryItems)
-        return try await pipeline.send(request)
-    }
-
     private func listRequest(limit: Int?, pageToken: String?) -> HTTPRequest {
         Self.listRequest(limit: limit, pageToken: pageToken)
     }

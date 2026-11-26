@@ -9,12 +9,21 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Breaking (1.0 — see MIGRATION.md)
+
+- A response with no `HTTPResponse.url` is refused. `HTTPRequest.baseURL` now carries the configured base URL; `MockHTTPClient` and `RecordingHTTPClient` default to it.
+- `HTTPClient.stream(_:validatingResponseFrom:)` is required. `stream(_:)` becomes an extension method.
+- `AnthropicError.invalidRequest(String)` added; skill upload validation throws it instead of `.encodingError`.
+- `BatchResultOutcome.unknown(type:)` added; an unrecognised outcome no longer decodes as `.canceled`.
+- Removed: `CreateSkillRequest`, `skills.create(_:)`, `skills.list(limit:afterId:)`, `files.list(limit:afterId:beforeId:)`, `Skill.name`, `FileObject.purpose`.
+
 ### Changed
 
 - Relicensed from MIT to Apache-2.0, matching the other Taumatix libraries. Versions already released stay under MIT.
 
 ### Added
 
+- Live tests for Models, Files and Batches, and a runbook (`Tests/AnthropicTests/Integration/README.md`).
 - `Model.claudeHaiku55` (`claude-haiku-5-5`), the current Haiku per the models overview.
 - `Model.claudeFable52` (`claude-fable-5-2`), now the current Fable per the models overview, and
   `Model.claudeMythos52` (`claude-mythos-5-2`, invite only). `.claudeFable51` is marked superseded
@@ -22,6 +31,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
+- `Anthropic.version` said `0.8.0`; a test now ties it to the latest released CHANGELOG heading.
 - **`admin.members` called routes that do not exist.** It used `/v1/organizations/members[/{id}]`
   and `PATCH`; the published routes are `/v1/organizations/users[/{user_id}]`, and the role update
   is a `POST` (<https://platform.claude.com/docs/en/api/admin/users/update>, retrieved 2026-10-09).

@@ -81,10 +81,6 @@ public final class URLSessionHTTPClient: HTTPClient, @unchecked Sendable {
         }
     }
 
-    public func stream(_ request: HTTPRequest) -> AsyncThrowingStream<Data, Error> {
-        stream(request, validatingResponseFrom: { _ in })
-    }
-
     public func stream(
         _ request: HTTPRequest,
         validatingResponseFrom validate: @escaping @Sendable (URL?) throws -> Void

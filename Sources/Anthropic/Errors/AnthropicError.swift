@@ -32,6 +32,10 @@ public enum AnthropicError: Error, Sendable, CustomStringConvertible {
     /// The request could not be encoded.
     case encodingError(EncodingError)
 
+    /// The caller's input was refused before anything was sent: an empty file set, a path with `..`,
+    /// a directory that does not exist. The message says what to change. No request was made.
+    case invalidRequest(String)
+
     /// The response body could not be decoded.
     case decodingError(DecodingError, rawBody: Data)
 
@@ -56,6 +60,7 @@ public enum AnthropicError: Error, Sendable, CustomStringConvertible {
         case .httpError(let code, _): return "AnthropicError.httpError(\(code))"
         case .networkError(let e): return "AnthropicError.networkError: \(e.localizedDescription)"
         case .encodingError(let e): return "AnthropicError.encodingError: \(e)"
+        case .invalidRequest(let message): return "AnthropicError.invalidRequest: \(message)"
         case .decodingError(let e, _): return "AnthropicError.decodingError: \(e)"
         case .streamParseError(let msg): return "AnthropicError.streamParseError: \(msg)"
         case .timeout: return "AnthropicError.timeout"

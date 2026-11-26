@@ -18,21 +18,21 @@ extension SkillFile {
     /// Hidden files and directories (`.DS_Store`, `.git`) are left out, and so are symbolic
     /// links, which could point anywhere on the machine. Files are in path order.
     ///
-    /// - Throws: ``AnthropicError/encodingError(_:)`` if `url` is not a directory or has no
+    /// - Throws: ``AnthropicError/invalidRequest(_:)`` if `url` is not a directory or has no
     ///   `SKILL.md` at its root. That is a stricter check than `create` makes, since `create` sees
     ///   only paths. Throws the underlying error if a file cannot be read.
     public static func directory(at url: URL) throws -> [SkillFile] {
         let fm = FileManager.default
         var isDirectory: ObjCBool = false
         guard fm.fileExists(atPath: url.path, isDirectory: &isDirectory), isDirectory.boolValue else {
-            throw invalidDirectory(url, "\(url.path) is not a directory.")
+            throw AnthropicError.invalidRequest("\(url.path) is not a directory.")
         }
 
         let name = url.lastPathComponent
         let base = url.resolvingSymlinksInPath().standardizedFileURL.path
         let keys: [URLResourceKey] = [.isRegularFileKey, .isSymbolicLinkKey]
         guard let walker = fm.enumerator(at: url, includingPropertiesForKeys: keys, options: [.skipsHiddenFiles]) else {
-            throw invalidDirectory(url, "\(url.path) could not be read.")
+            throw AnthropicError.invalidRequest("\(url.path) could not be read.")
         }
 
         var files: [SkillFile] = []
@@ -53,7 +53,7 @@ extension SkillFile {
         files.sort { $0.path < $1.path }
 
         guard files.contains(where: { $0.path == "\(name)/SKILL.md" }) else {
-            throw invalidDirectory(url, "A skill directory must have a SKILL.md at its root; \(url.path) does not.")
+            throw AnthropicError.invalidRequest("A skill directory must have a SKILL.md at its root; \(url.path) does not.")
         }
         return files
     }
@@ -70,9 +70,5 @@ extension SkillFile {
             #endif
             return "application/octet-stream"
         }
-    }
-
-    private static func invalidDirectory(_ url: URL, _ reason: String) -> AnthropicError {
-        .encodingError(EncodingError.invalidValue(url, .init(codingPath: [], debugDescription: reason)))
     }
 }

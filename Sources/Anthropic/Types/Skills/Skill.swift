@@ -106,12 +106,6 @@ public struct Skill: Sendable, Decodable, Equatable {
     /// retained so a response that does supply one is not discarded.
     public let description: String?
 
-    /// The skill's label.
-    ///
-    /// - Note: Renamed. The API calls this field `display_name`; use ``displayName``.
-    @available(*, deprecated, renamed: "displayName")
-    public var name: String { displayName }
-
     private enum CodingKeys: String, CodingKey {
         case id, type, displayName, latestVersionId, source, createdAt, updatedAt, description
         case name
@@ -149,23 +143,4 @@ public struct SkillDeleteResponse: Sendable, Decodable, Equatable {
     public let id: String
     /// Deleted object type. Always `"skill_deleted"`.
     public let type: String
-}
-
-/// Request to create a skill.
-///
-/// - Warning: The Skills API creates a skill from an uploaded file set, not from a JSON body — see
-///   <https://platform.claude.com/docs/en/api/skills/create>. This type encodes a JSON body the API
-///   does not accept and never did; it is retained only so existing call sites still compile.
-///   Use ``SkillsService/create(files:displayName:)``.
-@available(*, deprecated, message: "The API creates skills from uploaded files. Use SkillsService.create(files:displayName:).")
-public struct CreateSkillRequest: Sendable, Encodable {
-    public let name: String
-    public let description: String?
-    public let parameters: JSONSchema?
-
-    public init(name: String, description: String? = nil, parameters: JSONSchema? = nil) {
-        self.name = name
-        self.description = description
-        self.parameters = parameters
-    }
 }

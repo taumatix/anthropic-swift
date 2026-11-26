@@ -237,51 +237,6 @@ final class SkillsServiceTests: XCTestCase {
 
     // MARK: - Backward compatibility
 
-    /// The pre-GA `list(limit:afterId:)` still compiles and still sends `after_id`.
-    @available(*, deprecated, message: "exercises deprecated API on purpose")
-    func testDeprecatedAfterIdOverloadStillSendsAnIdCursor() async throws {
-        mock.handler = { request in
-            let items = request.queryItemsByName
-            XCTAssertEqual(items["after_id"], "skill_01")
-            XCTAssertEqual(items["limit"], "5")
-            XCTAssertNil(items["page"])
-            return HTTPResponse(statusCode: 200, body: MockResponses.skillList)
-        }
-        _ = try await client.skills.list(limit: 5, afterId: "skill_01")
-    }
-
-    /// The deprecated overload must not iterate: its page is an id-cursor page, and feeding
-    /// `lastId` to a `page=` fetcher would re-request the same page forever.
-    @available(*, deprecated, message: "exercises deprecated API on purpose")
-    func testDeprecatedAfterIdOverloadDoesNotPaginate() async throws {
-        let idCursorPage = Data("""
-        {"data":[{"id":"skill_01","type":"skill","display_name":"One","created_at":"2025-01-01"}],
-         "has_more":true,"first_id":"skill_01","last_id":"skill_01"}
-        """.utf8)
-        mock.handler = { _ in HTTPResponse(statusCode: 200, body: idCursorPage) }
-
-        var seen = 0
-        for try await _ in try await client.skills.list(afterId: nil) { seen += 1 }
-
-        XCTAssertEqual(seen, 1)
-        XCTAssertEqual(mock.recordedRequests.count, 1, "must not have re-requested")
-    }
-
-    /// The deprecated JSON `create` still POSTs its body, and no longer sends the beta header.
-    @available(*, deprecated, message: "exercises deprecated API on purpose")
-    func testDeprecatedCreateStillSendsAJSONBody() async throws {
-        mock.handler = { request in
-            XCTAssertEqual(request.method, "POST")
-            XCTAssertEqual(request.path, "/v1/skills")
-            XCTAssertNil(request.headers["anthropic-beta"])
-            let body = try XCTUnwrap(request.body.map { String(decoding: $0, as: UTF8.self) })
-            XCTAssertTrue(body.contains("\"name\":\"My Skill\""), body)
-            return HTTPResponse(statusCode: 200, body: MockResponses.skillObject)
-        }
-        let skill = try await client.skills.create(CreateSkillRequest(name: "My Skill"))
-        XCTAssertEqual(skill.displayName, "display_name")
-    }
-
     /// A response carrying the pre-GA `name` key still decodes through the service.
     func testLegacyNameKeyStillDecodesThroughTheService() async throws {
         mock.handler = { _ in HTTPResponse(statusCode: 200, body: self.legacySkillJSON) }

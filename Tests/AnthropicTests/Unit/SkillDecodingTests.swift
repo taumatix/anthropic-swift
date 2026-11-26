@@ -65,14 +65,6 @@ final class SkillDecodingTests: XCTestCase {
         XCTAssertEqual(SkillSource.Kind(rawValue: "marketplace").rawValue, "marketplace")
     }
 
-    /// `name` predates the GA object and is kept as an alias so existing call sites compile.
-    @available(*, deprecated, message: "exercises deprecated API on purpose")
-    func testNameAliasesDisplayName() throws {
-        let skill = try JSONCoding.decoder.decode(Skill.self, from: MockResponses.skillObject)
-        XCTAssertEqual(skill.name, "display_name")
-        XCTAssertEqual(skill.name, skill.displayName)
-    }
-
     /// A response carrying the pre-GA `name` key and no `display_name` still decodes, so a
     /// deployment pinned to an older shape degrades instead of throwing.
     func testFallsBackToLegacyNameKey() throws {

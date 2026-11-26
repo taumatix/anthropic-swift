@@ -12,6 +12,9 @@ public enum BatchResultOutcome: Sendable, Decodable {
     case errored(error: APIError)
     case canceled
     case expired
+    /// A `result.type` this SDK does not know. Kept apart from `.canceled` so a new outcome kind
+    /// is not reported as a cancellation.
+    case unknown(type: String)
 
     private enum CodingKeys: String, CodingKey { case type, message, error }
 
@@ -30,7 +33,7 @@ public enum BatchResultOutcome: Sendable, Decodable {
         case "expired":
             self = .expired
         default:
-            self = .canceled
+            self = .unknown(type: type_)
         }
     }
 }

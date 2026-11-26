@@ -16,6 +16,10 @@ public struct HTTPRequest: Sendable {
     /// for the transport's own default. `RequestPipeline` sets it from
     /// ``ClientConfiguration/timeout``; a custom ``HTTPClient`` should honour it.
     public var timeout: TimeInterval?
+    /// The configured base URL this request is for, set by `RequestPipeline` before the request
+    /// reaches the ``HTTPClient``. A custom client resolves ``path`` against it, and reports it as
+    /// ``HTTPResponse/url`` if it does not know better. `nil` only on a request built by hand.
+    public var baseURL: URL?
 
     public init(
         method: String,
@@ -23,7 +27,8 @@ public struct HTTPRequest: Sendable {
         headers: [String: String] = [:],
         body: Data? = nil,
         queryItems: [URLQueryItem] = [],
-        timeout: TimeInterval? = nil
+        timeout: TimeInterval? = nil,
+        baseURL: URL? = nil
     ) {
         self.method = method
         self.path = path
@@ -31,6 +36,7 @@ public struct HTTPRequest: Sendable {
         self.body = body
         self.queryItems = queryItems
         self.timeout = timeout
+        self.baseURL = baseURL
     }
 
     /// Builds the full `URLRequest` for the given base URL.

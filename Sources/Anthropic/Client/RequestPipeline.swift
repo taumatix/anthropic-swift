@@ -82,6 +82,7 @@ public final class RequestPipeline: Sendable {
 
     private func prepare(_ request: HTTPRequest, isAdmin: Bool) -> HTTPRequest {
         var req = request
+        req.baseURL = configuration.baseURL
         // A timeout the service set on the request wins; otherwise the configuration's applies.
         if req.timeout == nil {
             req.timeout = configuration.timeout
